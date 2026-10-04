@@ -1,11 +1,21 @@
-import { useState } from 'react';
-import type { ScreenName, VoiceSubmission } from './types';
+import { useState, useEffect } from 'react';
+import type { ScreenName, VoiceSubmission, UserProfile, Scenario } from './types';
+import { SCENARIOS } from './data/scenarios';
 import { HomeDashboard } from './components/HomeDashboard';
 import { SituationRoom } from './components/SituationRoom';
 import { VoiceLab } from './components/VoiceLab';
 import { RealChatArena } from './components/RealChatArena';
 import { TeacherPortal } from './components/TeacherPortal';
-import { Smartphone, Monitor, Sparkles } from 'lucide-react';
+import { Sparkles, Home, Compass, MessageCircle, User } from 'lucide-react';
+
+const DEFAULT_PROFILE: UserProfile = {
+  name: 'Simphony',
+  grade: 'ม.2/2',
+  avatar: '👩‍🎓',
+  xp: 340,
+  streak: 5,
+  completedQuests: ['cafe-order'],
+};
 
 const INITIAL_SUBMISSIONS: VoiceSubmission[] = [
   {
@@ -13,56 +23,114 @@ const INITIAL_SUBMISSIONS: VoiceSubmission[] = [
     studentName: 'Nicha Srisuk',
     studentNo: 'No. 07 • ม.2/2',
     avatar: '👧',
-    task: 'Order Coffee',
+    task: 'At the Coffee Shop',
     submittedAt: 'Today, 10:15 AM',
     duration: '0:18s',
-    fluencyScore: 4,
+    fluencyScore: 5,
     appropriatenessScore: 5,
+    transcription: 'Could you make it less sweet, please?',
   },
   {
     id: '2',
     studentName: 'Punn Tanasiri',
     studentNo: 'No. 12 • ม.2/2',
     avatar: '👦',
-    task: 'Order Coffee',
+    task: 'At the Coffee Shop',
     submittedAt: 'Today, 11:20 AM',
     duration: '0:21s',
-    fluencyScore: 3,
+    fluencyScore: 4,
     appropriatenessScore: 4,
+    transcription: 'I would like an iced caramel macchiato please.',
   },
   {
     id: '3',
     studentName: 'Mali Charoen',
     studentNo: 'No. 19 • ม.2/2',
     avatar: '👩',
-    task: 'Order Coffee',
+    task: 'At the Coffee Shop',
     submittedAt: 'Today, 01:05 PM',
     duration: '0:15s',
     fluencyScore: 5,
     appropriatenessScore: 5,
+    transcription: 'Could I get a medium cup with oat milk?',
   },
   {
     id: '4',
     studentName: 'Beam Kittipong',
     studentNo: 'No. 31 • ม.2/2',
     avatar: '🧑',
-    task: 'Order Coffee',
+    task: 'Airport Check-in & Security',
     submittedAt: 'Today, 02:40 PM',
     duration: '0:19s',
     fluencyScore: 4,
     appropriatenessScore: 4,
+    transcription: 'Could I please have a window seat if possible?',
   },
 ];
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
-  const [xp, setXp] = useState(340);
-  const [streak] = useState(5);
-  const [submissions, setSubmissions] = useState<VoiceSubmission[]>(INITIAL_SUBMISSIONS);
-  const [isPhoneFrame, setIsPhoneFrame] = useState(true);
+  const [activeScenario, setActiveScenario] = useState<Scenario>(SCENARIOS[0]);
+
+  // Load profile from localStorage if exists
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    try {
+      const saved = localStorage.getItem('eng_profile');
+      return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+    } catch {
+      return DEFAULT_PROFILE;
+    }
+  });
+
+  // Load submissions from localStorage
+  const [submissions, setSubmissions] = useState<VoiceSubmission[]>(() => {
+    try {
+      const saved = localStorage.getItem('eng_submissions');
+      return saved ? JSON.parse(saved) : INITIAL_SUBMISSIONS;
+    } catch {
+      return INITIAL_SUBMISSIONS;
+    }
+  });
+
+  // Save to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('eng_profile', JSON.stringify(profile));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('eng_submissions', JSON.stringify(submissions));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+  }, [submissions]);
 
   const handleAddXp = (amount: number) => {
-    setXp((prev) => prev + amount);
+    setProfile((prev) => ({
+      ...prev,
+      xp: prev.xp + amount,
+    }));
+  };
+
+  const handleUpdateProfile = (updated: Partial<UserProfile>) => {
+    setProfile((prev) => ({
+      ...prev,
+      ...updated,
+    }));
+  };
+
+  const handleCompleteScenario = (scenarioId: string) => {
+    setProfile((prev) => ({
+      ...prev,
+      completedQuests: prev.completedQuests.includes(scenarioId)
+        ? prev.completedQuests
+        : [...prev.completedQuests, scenarioId],
+      xp: prev.xp + 40,
+    }));
   };
 
   const handleAddSubmission = (newSub: VoiceSubmission) => {
@@ -70,154 +138,124 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-start p-0 md:p-6 select-none font-sans">
-      {/* Top Demo Bar for Testing (Only on desktop) */}
-      <header className="hidden md:flex items-center justify-between w-full max-w-4xl mb-4 px-4 py-2.5 bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-lg text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-orange-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-xs">
-            E
-          </div>
-          <div>
-            <h1 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
-              EngEveryday Hub
-              <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                CAR Research MVP
-              </span>
-            </h1>
-          </div>
-        </div>
-
-        {/* Quick Screen Switcher */}
-        <div className="flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-700/50">
-          <button
+    <div className="min-h-screen bg-[#f1efe9] text-slate-900 flex flex-col justify-between font-sans selection:bg-orange-200">
+      {/* Top Application Bar */}
+      <header className="w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 shadow-2xs">
+        <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
+          <div
             onClick={() => setCurrentScreen('dashboard')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentScreen === 'dashboard' ? 'bg-orange-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
+            className="flex items-center gap-2.5 cursor-pointer group"
           >
-            1. Home
-          </button>
-          <button
-            onClick={() => setCurrentScreen('situation')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentScreen === 'situation' ? 'bg-orange-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            2. Situation
-          </button>
-          <button
-            onClick={() => setCurrentScreen('voice')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentScreen === 'voice' ? 'bg-orange-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            3. Voice Lab
-          </button>
-          <button
-            onClick={() => setCurrentScreen('chat')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentScreen === 'chat' ? 'bg-orange-500 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            4. Chat
-          </button>
-          <button
-            onClick={() => setCurrentScreen('teacher')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentScreen === 'teacher' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            5. Teacher Portal
-          </button>
-        </div>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-rose-500 flex items-center justify-center font-black text-white shadow-xs group-hover:scale-105 transition-transform text-sm">
+              E
+            </div>
+            <div>
+              <h1 className="font-bold text-slate-900 text-sm tracking-tight flex items-center gap-2">
+                EngEveryday Hub
+                <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                  Everyday Communicative English
+                </span>
+              </h1>
+            </div>
+          </div>
 
-        {/* Device Frame Toggle */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setIsPhoneFrame(true)}
-            className={`p-1.5 rounded-lg cursor-pointer ${
-              isPhoneFrame ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-            title="iPhone Mockup Frame"
-          >
-            <Smartphone className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setIsPhoneFrame(false)}
-            className={`p-1.5 rounded-lg cursor-pointer ${
-              !isPhoneFrame ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-            title="Full Width View"
-          >
-            <Monitor className="w-4 h-4" />
-          </button>
+          {/* Quick Header Nav Links */}
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              onClick={() => setCurrentScreen('dashboard')}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentScreen === 'dashboard'
+                  ? 'bg-orange-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Home</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentScreen('situation')}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentScreen === 'situation'
+                  ? 'bg-orange-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Practice</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentScreen('chat')}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentScreen === 'chat'
+                  ? 'bg-orange-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Chat</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentScreen('teacher')}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentScreen === 'teacher'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Teacher Portal</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Container / Mobile Frame Wrapper */}
-      <main
-        className={`w-full transition-all duration-300 ${
-          isPhoneFrame
-            ? 'max-w-[400px] h-[844px] max-h-[92vh] rounded-[48px] border-[10px] border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden relative flex flex-col bg-[#faf8f5]'
-            : 'max-w-2xl min-h-[85vh] rounded-3xl overflow-hidden shadow-2xl bg-[#faf8f5]'
-        }`}
-      >
-        {/* Dynamic Island / Notch on Phone Frame */}
-        {isPhoneFrame && (
-          <div className="w-full bg-[#faf8f5] pt-3 px-6 flex justify-between items-center text-[11px] font-bold text-slate-800 shrink-0 z-40 select-none">
-            <span>9:41</span>
-            <div className="w-24 h-5 bg-slate-900 rounded-full flex items-center justify-end px-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>5G</span>
-              <div className="w-5 h-2.5 border border-slate-700 rounded-xs p-0.5 flex justify-end">
-                <div className="w-full h-full bg-slate-800 rounded-2xs"></div>
-              </div>
-            </div>
-          </div>
+      {/* Main Responsive App Container */}
+      <main className="w-full max-w-2xl mx-auto flex-1 bg-[#faf8f5] shadow-xl sm:my-4 sm:rounded-3xl sm:border border-slate-200/80 overflow-hidden flex flex-col relative min-h-[85vh]">
+        {currentScreen === 'dashboard' && (
+          <HomeDashboard
+            onNavigate={setCurrentScreen}
+            onSelectScenario={(sc) => setActiveScenario(sc)}
+            profile={profile}
+            onUpdateProfile={handleUpdateProfile}
+          />
         )}
 
-        {/* Screen Routing */}
-        <div className="flex-1 overflow-y-auto relative flex flex-col">
-          {currentScreen === 'dashboard' && (
-            <HomeDashboard onNavigate={setCurrentScreen} xp={xp} streak={streak} />
-          )}
+        {currentScreen === 'situation' && (
+          <SituationRoom
+            scenario={activeScenario}
+            onNavigate={setCurrentScreen}
+            onAddXp={handleAddXp}
+            onCompleteScenario={handleCompleteScenario}
+          />
+        )}
 
-          {currentScreen === 'situation' && (
-            <SituationRoom onNavigate={setCurrentScreen} onAddXp={handleAddXp} />
-          )}
+        {currentScreen === 'voice' && (
+          <VoiceLab
+            scenario={activeScenario}
+            profile={profile}
+            onNavigate={setCurrentScreen}
+            onSubmitVoice={handleAddSubmission}
+            onAddXp={handleAddXp}
+          />
+        )}
 
-          {currentScreen === 'voice' && (
-            <VoiceLab
-              onNavigate={setCurrentScreen}
-              onSubmitVoice={handleAddSubmission}
-              onAddXp={handleAddXp}
-            />
-          )}
+        {currentScreen === 'chat' && (
+          <RealChatArena onNavigate={setCurrentScreen} onAddXp={handleAddXp} />
+        )}
 
-          {currentScreen === 'chat' && (
-            <RealChatArena onNavigate={setCurrentScreen} onAddXp={handleAddXp} />
-          )}
-
-          {currentScreen === 'teacher' && (
-            <TeacherPortal onNavigate={setCurrentScreen} submissions={submissions} />
-          )}
-        </div>
-
-        {/* Home Indicator Bar on iPhone frame */}
-        {isPhoneFrame && (
-          <div className="w-full bg-[#faf8f5] py-2 flex justify-center shrink-0 z-40">
-            <div className="w-32 h-1 bg-slate-300 rounded-full"></div>
-          </div>
+        {currentScreen === 'teacher' && (
+          <TeacherPortal onNavigate={setCurrentScreen} submissions={submissions} />
         )}
       </main>
 
-      {/* Footer Info */}
-      <footer className="mt-4 text-center text-xs text-slate-500 hidden md:block">
+      {/* Footer */}
+      <footer className="w-full py-4 text-center text-xs text-slate-500">
         <p className="flex items-center justify-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-          Designed for 4th Year Practicum • Classroom Action Research (CAR)
+          <span>EngEveryday Hub • Classroom Action Research Platform (CAR)</span>
         </p>
       </footer>
     </div>
