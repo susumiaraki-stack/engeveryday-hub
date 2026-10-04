@@ -6,9 +6,13 @@ import { SituationRoom } from './components/SituationRoom';
 import { VoiceLab } from './components/VoiceLab';
 import { RealChatArena } from './components/RealChatArena';
 import { TeacherPortal } from './components/TeacherPortal';
+import { StudentFeedbackView } from './components/StudentFeedbackView';
+import { AssessmentRoom } from './components/AssessmentRoom';
+import { LeaderboardView } from './components/LeaderboardView';
 import {
   fetchSubmissionsFromDB,
   uploadAndSaveSubmission,
+  syncStudentProfileToDB,
 } from './lib/supabase';
 import { LoginModal } from './components/LoginModal';
 import {
@@ -124,27 +128,33 @@ export default function App() {
   }, [submissions]);
 
   const handleAddXp = (amount: number) => {
-    setProfile((prev) => ({
-      ...prev,
-      xp: prev.xp + amount,
-    }));
+    setProfile((prev) => {
+      const next = { ...prev, xp: prev.xp + amount };
+      syncStudentProfileToDB(next);
+      return next;
+    });
   };
 
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
-    setProfile((prev) => ({
-      ...prev,
-      ...updated,
-    }));
+    setProfile((prev) => {
+      const next = { ...prev, ...updated };
+      syncStudentProfileToDB(next);
+      return next;
+    });
   };
 
   const handleCompleteScenario = (scenarioId: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      completedQuests: prev.completedQuests.includes(scenarioId)
-        ? prev.completedQuests
-        : [...prev.completedQuests, scenarioId],
-      xp: prev.xp + 40,
-    }));
+    setProfile((prev) => {
+      const next = {
+        ...prev,
+        completedQuests: prev.completedQuests.includes(scenarioId)
+          ? prev.completedQuests
+          : [...prev.completedQuests, scenarioId],
+        xp: prev.xp + 40,
+      };
+      syncStudentProfileToDB(next);
+      return next;
+    });
   };
 
   const handleAddSubmission = async (newSub: VoiceSubmission, audioBlob?: Blob) => {
@@ -299,6 +309,7 @@ export default function App() {
             profile={profile}
             onUpdateProfile={handleUpdateProfile}
             onOpenLogin={() => setShowLoginModal(true)}
+            submissions={submissions}
           />
         )}
 
@@ -323,6 +334,29 @@ export default function App() {
 
         {currentScreen === 'chat' && (
           <RealChatArena onNavigate={setCurrentScreen} onAddXp={handleAddXp} />
+        )}
+
+        {currentScreen === 'feedback' && (
+          <StudentFeedbackView
+            onNavigate={setCurrentScreen}
+            submissions={submissions}
+            profile={profile}
+          />
+        )}
+
+        {currentScreen === 'assessment' && (
+          <AssessmentRoom
+            onNavigate={setCurrentScreen}
+            profile={profile}
+            onAddXp={handleAddXp}
+          />
+        )}
+
+        {currentScreen === 'leaderboard' && (
+          <LeaderboardView
+            onNavigate={setCurrentScreen}
+            profile={profile}
+          />
         )}
 
         {currentScreen === 'teacher' && (
@@ -404,6 +438,7 @@ export default function App() {
         onClose={() => setShowLoginModal(false)}
         onLogin={(newProfile) => {
           setProfile(newProfile);
+          syncStudentProfileToDB(newProfile);
           setShowLoginModal(false);
         }}
         onContinueAsGuest={() => {

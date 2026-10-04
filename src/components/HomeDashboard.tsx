@@ -8,7 +8,6 @@ import {
   Mic,
   Home,
   Compass,
-  MessageCircle,
   User,
   Sparkles,
   Trophy,
@@ -16,8 +15,9 @@ import {
   Edit2,
   MapPin,
   Pill,
+  Inbox,
 } from 'lucide-react';
-import type { ScreenName, UserProfile, Scenario } from '../types';
+import type { ScreenName, UserProfile, Scenario, VoiceSubmission } from '../types';
 import { SCENARIOS } from '../data/scenarios';
 
 interface HomeDashboardProps {
@@ -26,6 +26,7 @@ interface HomeDashboardProps {
   profile: UserProfile;
   onUpdateProfile: (updated: Partial<UserProfile>) => void;
   onOpenLogin: () => void;
+  submissions?: VoiceSubmission[];
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
@@ -34,6 +35,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   profile,
   onUpdateProfile,
   onOpenLogin,
+  submissions = [],
 }) => {
   const [selectedLevel, setSelectedLevel] = useState<1 | 2>(1);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -41,6 +43,19 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [editGrade, setEditGrade] = useState(profile.grade);
 
   const filteredScenarios = SCENARIOS.filter((s) => s.level === selectedLevel);
+
+  // Student's reviewed submissions count
+  const mySubmissions = submissions.filter((s) => {
+    if (!profile.isLoggedIn) return true;
+    return (
+      s.studentName.toLowerCase() === profile.name.toLowerCase() ||
+      s.studentNo === profile.grade ||
+      s.studentNo === profile.studentNumber
+    );
+  });
+  const reviewedCount = mySubmissions.filter(
+    (s) => (s.fluencyScore || 0) > 0 || (s.appropriatenessScore || 0) > 0
+  ).length;
 
   const getScenarioIcon = (id: string) => {
     switch (id) {
@@ -108,7 +123,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 เข้าสู่ระบบ
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200/60 rounded-full shadow-2xs">
+              <div
+                onClick={() => onNavigate('leaderboard')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200/60 rounded-full shadow-2xs cursor-pointer hover:bg-amber-100 transition-colors"
+                title="ดูกระดานอันดับ"
+              >
                 <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
                 <span className="text-xs font-bold text-orange-700">{profile.streak}-Day Streak</span>
               </div>
@@ -129,12 +148,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
         )}
 
-        {/* Level & XP Progress */}
-        <div className="space-y-1.5">
+        {/* Level & XP Progress (Clickable to Leaderboard) */}
+        <div
+          onClick={() => onNavigate('leaderboard')}
+          className="space-y-1.5 cursor-pointer group"
+          title="แตะเพื่อดูกระดานผู้นำการเรียนรู้"
+        >
           <div className="flex justify-between text-xs font-semibold text-slate-600">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 group-hover:text-orange-600 transition-colors">
               <Trophy className="w-3.5 h-3.5 text-amber-500" />
-              Level {Math.floor(profile.xp / 100) + 1}: Explorer
+              Level {Math.floor(profile.xp / 100) + 1}: Explorer (ดูกระดานอันดับ →)
             </span>
             <span className="text-orange-600 font-bold">{profile.xp} XP</span>
           </div>
@@ -158,7 +181,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             Today's Mission: Order a Drink at Starbucks (5 min)
           </h3>
           <p className="text-xs text-orange-100/90 mb-4 max-w-sm">
-            Practice ordering politely, customizing sweetness, and handling payments in English.
+            ฝึกสั่งเครื่องดื่ม ปรับความหวาน และจ่ายเงินเป็นภาษาอังกฤษอย่างสุภาพ
           </p>
           <button
             onClick={() => {
@@ -170,6 +193,59 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             Start Mission
             <ArrowUpRight className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Feature Cards: 1) Teacher Feedback & 2) CAR Pre/Post Test */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Card 1: Teacher Feedback */}
+          <div
+            onClick={() => onNavigate('feedback')}
+            className="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-2xs hover:border-orange-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-orange-50 flex items-center justify-center text-xl shadow-2xs">
+                📬
+              </div>
+              {reviewedCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                  ตรวจแล้ว {reviewedCount}
+                </span>
+              )}
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 text-sm leading-tight">ผลการตรวจของครู</h4>
+              <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                ดูคะแนนดาว ⭐ และข้อเสนอแนะรายบุคคล
+              </p>
+              <span className="inline-block mt-2.5 text-[10px] font-bold text-orange-600 group-hover:translate-x-0.5 transition-transform">
+                เปิดดูผลตรวจ →
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: CAR Pre/Post Test */}
+          <div
+            onClick={() => onNavigate('assessment')}
+            className="p-4 bg-white rounded-3xl border border-slate-200/80 shadow-2xs hover:border-rose-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-xl shadow-2xs">
+                📊
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
+                CAR Test
+              </span>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 text-sm leading-tight">แบบทดสอบ CAR</h4>
+              <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                วัดผลสัมฤทธิ์ก่อน-หลังเรียน (Pre / Post)
+              </p>
+              <span className="inline-block mt-2.5 text-[10px] font-bold text-rose-600 group-hover:translate-x-0.5 transition-transform">
+                เริ่มทำแบบทดสอบ →
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Level Switcher Tabs */}
@@ -292,7 +368,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               </div>
               <div>
                 <h5 className="font-bold text-slate-900 text-sm leading-tight">Voice Lab</h5>
-                <p className="text-[11px] text-slate-400 mt-0.5">Pronunciation Check</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Speaking Studio</p>
                 <span className="inline-block mt-2 px-2 py-0.5 text-[9px] font-bold rounded-md bg-purple-50 text-purple-700">
                   Record & Submit
                 </span>
@@ -375,13 +451,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       )}
 
       {/* Sticky Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-6 py-3 flex justify-between items-center z-30 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2.5 flex justify-between items-center z-30 shadow-lg">
         <button
           onClick={() => onNavigate('dashboard')}
-          className="flex flex-col items-center gap-1 text-[#E04F2E] font-bold cursor-pointer"
+          className="flex flex-col items-center gap-0.5 text-orange-600 font-bold cursor-pointer"
         >
           <Home className="w-5 h-5" />
-          <span className="text-[10px]">Home</span>
+          <span className="text-[10px]">หน้าหลัก</span>
         </button>
 
         <button
@@ -389,26 +465,37 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             onSelectScenario(SCENARIOS[0]);
             onNavigate('situation');
           }}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
+          className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
         >
           <Compass className="w-5 h-5" />
-          <span className="text-[10px]">Quests</span>
+          <span className="text-[10px]">ฝึกสนทนา</span>
         </button>
 
         <button
-          onClick={() => onNavigate('chat')}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
+          onClick={() => onNavigate('feedback')}
+          className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-600 font-medium cursor-pointer relative"
         >
-          <MessageCircle className="w-5 h-5" />
-          <span className="text-[10px]">Chat</span>
+          <Inbox className="w-5 h-5" />
+          <span className="text-[10px]">ผลตรวจ</span>
+          {reviewedCount > 0 && (
+            <span className="absolute -top-1 right-1 w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
+          )}
+        </button>
+
+        <button
+          onClick={() => onNavigate('leaderboard')}
+          className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
+        >
+          <Trophy className="w-5 h-5" />
+          <span className="text-[10px]">อันดับ</span>
         </button>
 
         <button
           onClick={() => setIsEditingProfile(true)}
-          className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
+          className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
         >
           <User className="w-5 h-5" />
-          <span className="text-[10px]">Profile</span>
+          <span className="text-[10px]">โปรไฟล์</span>
         </button>
       </div>
     </div>

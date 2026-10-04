@@ -1,4 +1,12 @@
-export type ScreenName = 'dashboard' | 'situation' | 'voice' | 'chat' | 'teacher';
+export type ScreenName =
+  | 'dashboard'
+  | 'situation'
+  | 'voice'
+  | 'chat'
+  | 'teacher'
+  | 'feedback'
+  | 'assessment'
+  | 'leaderboard';
 
 export interface DialogueStep {
   id: number;
@@ -70,4 +78,39 @@ export interface UserProfile {
   streak: number;
   completedQuests: string[];
   isLoggedIn: boolean;
+}
+
+export interface AssessmentQuestion {
+  id: number;
+  topic: string;
+  situation: string;
+  question: string;
+  options: {
+    id: string;
+    text: string;
+    isCorrect: boolean;
+    explanation: string;
+  }[];
+}
+
+export interface CarAssessmentRecord {
+  id: string;
+  studentName: string;
+  studentNo: string;
+  grade: string;
+  testType: 'pre' | 'post';
+  score: number;
+  total: number;
+  percentage: number;
+  submittedAt: string;
+}
+
+export interface LeaderboardUser {
+  id: string;
+  name: string;
+  studentNo: string;
+  grade: string;
+  avatar: string;
+  xp: number;
+  streak: number;
 }

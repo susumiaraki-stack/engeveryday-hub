@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { VoiceSubmission } from '../types';
+import type { VoiceSubmission, CarAssessmentRecord, UserProfile, LeaderboardUser } from '../types';
 
 // Read from env vars or localStorage config
 export const getSupabaseConfig = () => {
@@ -174,4 +174,147 @@ export const updateSubmissionFeedbackInDB = async (
   } catch (err) {
     console.warn('Failed to update feedback in Supabase:', err);
   }
+};
+
+// 3. CAR Assessment Sync (Pre-test & Post-test)
+export const saveCarAssessmentToDB = async (record: CarAssessmentRecord): Promise<void> => {
+  // Always save to local storage as fallback
+  try {
+    const existing: CarAssessmentRecord[] = JSON.parse(
+      localStorage.getItem('eng_car_assessments') || '[]'
+    );
+    localStorage.setItem(
+      'eng_car_assessments',
+      JSON.stringify([record, ...existing])
+    );
+  } catch {}
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+
+  try {
+    await supabase.from('car_assessments').insert([
+      {
+        student_name: record.studentName,
+        student_no: record.studentNo,
+        grade: record.grade,
+        test_type: record.testType,
+        score: record.score,
+        total: record.total,
+        percentage: record.percentage,
+      },
+    ]);
+  } catch (err) {
+    console.warn('Supabase car_assessments insert error (using local cache):', err);
+  }
+};
+
+export const fetchCarAssessmentsFromDB = async (): Promise<CarAssessmentRecord[]> => {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('car_assessments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.id,
+          studentName: row.student_name,
+          studentNo: row.student_no,
+          grade: row.grade,
+          testType: row.test_type,
+          score: row.score,
+          total: row.total,
+          percentage: Number(row.percentage),
+          submittedAt: new Date(row.created_at).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        }));
+      }
+    } catch (e) {
+      console.warn('Supabase car_assessments fetch error:', e);
+    }
+  }
+
+  // Fallback to local storage
+  try {
+    return JSON.parse(localStorage.getItem('eng_car_assessments') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+// 4. Student Profile & Leaderboard Sync
+export const syncStudentProfileToDB = async (profile: UserProfile): Promise<void> => {
+  if (!profile.isLoggedIn || profile.name === 'Guest User') return;
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+
+  try {
+    await supabase.from('student_profiles').upsert(
+      {
+        student_name: profile.name,
+        student_no: profile.studentNumber,
+        grade: profile.grade,
+        avatar: profile.avatar,
+        xp: profile.xp,
+        streak: profile.streak,
+        last_active: new Date().toISOString(),
+      },
+      { onConflict: 'student_name,student_no,grade' }
+    );
+  } catch (err) {
+    console.warn('Student profile upsert error:', err);
+  }
+};
+
+export const fetchLeaderboardFromDB = async (): Promise<LeaderboardUser[]> => {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('student_profiles')
+        .select('*')
+        .order('xp', { ascending: false })
+        .limit(50);
+
+      if (!error && data && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.id,
+          name: row.student_name,
+          studentNo: row.student_no,
+          grade: row.grade,
+          avatar: row.avatar || '👩‍🎓',
+          xp: row.xp || 0,
+          streak: row.streak || 1,
+        }));
+      }
+    } catch (e) {
+      console.warn('Leaderboard fetch error:', e);
+    }
+  }
+
+  // Fallback if table is empty or local
+  try {
+    const cachedProfile = JSON.parse(localStorage.getItem('eng_profile') || '{}');
+    if (cachedProfile.name && cachedProfile.isLoggedIn) {
+      return [
+        {
+          id: 'me',
+          name: cachedProfile.name,
+          studentNo: cachedProfile.studentNumber,
+          grade: cachedProfile.grade,
+          avatar: cachedProfile.avatar,
+          xp: cachedProfile.xp,
+          streak: cachedProfile.streak,
+        },
+      ];
+    }
+  } catch {}
+
+  return [];
 };
