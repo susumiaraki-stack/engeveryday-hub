@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ScreenName, VoiceSubmission, UserProfile, Scenario } from './types';
 import { SCENARIOS } from './data/scenarios';
 import { HomeDashboard } from './components/HomeDashboard';
@@ -6,73 +6,26 @@ import { SituationRoom } from './components/SituationRoom';
 import { VoiceLab } from './components/VoiceLab';
 import { RealChatArena } from './components/RealChatArena';
 import { TeacherPortal } from './components/TeacherPortal';
+import {
+  fetchSubmissionsFromDB,
+  uploadAndSaveSubmission,
+} from './lib/supabase';
 import { Sparkles, Home, Compass, MessageCircle, User } from 'lucide-react';
 
 const DEFAULT_PROFILE: UserProfile = {
-  name: 'Simphony',
+  name: 'Student',
   grade: 'ม.2/2',
   avatar: '👩‍🎓',
-  xp: 340,
-  streak: 5,
-  completedQuests: ['cafe-order'],
+  xp: 0,
+  streak: 1,
+  completedQuests: [],
 };
-
-const INITIAL_SUBMISSIONS: VoiceSubmission[] = [
-  {
-    id: '1',
-    studentName: 'Nicha Srisuk',
-    studentNo: 'No. 07 • ม.2/2',
-    avatar: '👧',
-    task: 'At the Coffee Shop',
-    submittedAt: 'Today, 10:15 AM',
-    duration: '0:18s',
-    fluencyScore: 5,
-    appropriatenessScore: 5,
-    transcription: 'Could you make it less sweet, please?',
-  },
-  {
-    id: '2',
-    studentName: 'Punn Tanasiri',
-    studentNo: 'No. 12 • ม.2/2',
-    avatar: '👦',
-    task: 'At the Coffee Shop',
-    submittedAt: 'Today, 11:20 AM',
-    duration: '0:21s',
-    fluencyScore: 4,
-    appropriatenessScore: 4,
-    transcription: 'I would like an iced caramel macchiato please.',
-  },
-  {
-    id: '3',
-    studentName: 'Mali Charoen',
-    studentNo: 'No. 19 • ม.2/2',
-    avatar: '👩',
-    task: 'At the Coffee Shop',
-    submittedAt: 'Today, 01:05 PM',
-    duration: '0:15s',
-    fluencyScore: 5,
-    appropriatenessScore: 5,
-    transcription: 'Could I get a medium cup with oat milk?',
-  },
-  {
-    id: '4',
-    studentName: 'Beam Kittipong',
-    studentNo: 'No. 31 • ม.2/2',
-    avatar: '🧑',
-    task: 'Airport Check-in & Security',
-    submittedAt: 'Today, 02:40 PM',
-    duration: '0:19s',
-    fluencyScore: 4,
-    appropriatenessScore: 4,
-    transcription: 'Could I please have a window seat if possible?',
-  },
-];
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
   const [activeScenario, setActiveScenario] = useState<Scenario>(SCENARIOS[0]);
 
-  // Load profile from localStorage if exists
+  // Load real profile from localStorage
   const [profile, setProfile] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem('eng_profile');
@@ -82,17 +35,32 @@ export default function App() {
     }
   });
 
-  // Load submissions from localStorage
+  // Submissions: starts empty (no fake data!), loaded from Supabase or localStorage
   const [submissions, setSubmissions] = useState<VoiceSubmission[]>(() => {
     try {
       const saved = localStorage.getItem('eng_submissions');
-      return saved ? JSON.parse(saved) : INITIAL_SUBMISSIONS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_SUBMISSIONS;
+      return [];
     }
   });
 
-  // Save to localStorage on change
+  // Fetch real submissions from Supabase on mount
+  const refreshSubmissions = useCallback(async () => {
+    const data = await fetchSubmissionsFromDB();
+    if (data && data.length > 0) {
+      setSubmissions(data);
+      try {
+        localStorage.setItem('eng_submissions', JSON.stringify(data));
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshSubmissions();
+  }, [refreshSubmissions]);
+
+  // Save profile to localStorage on change
   useEffect(() => {
     try {
       localStorage.setItem('eng_profile', JSON.stringify(profile));
@@ -101,6 +69,7 @@ export default function App() {
     }
   }, [profile]);
 
+  // Save submissions to localStorage on change
   useEffect(() => {
     try {
       localStorage.setItem('eng_submissions', JSON.stringify(submissions));
@@ -133,8 +102,12 @@ export default function App() {
     }));
   };
 
-  const handleAddSubmission = (newSub: VoiceSubmission) => {
-    setSubmissions((prev) => [newSub, ...prev]);
+  const handleAddSubmission = async (newSub: VoiceSubmission, audioBlob?: Blob) => {
+    // 1. Upload to Supabase
+    const savedSub = await uploadAndSaveSubmission(newSub, audioBlob);
+
+    // 2. Add to local state
+    setSubmissions((prev) => [savedSub, ...prev]);
   };
 
   return (
@@ -247,7 +220,11 @@ export default function App() {
         )}
 
         {currentScreen === 'teacher' && (
-          <TeacherPortal onNavigate={setCurrentScreen} submissions={submissions} />
+          <TeacherPortal
+            onNavigate={setCurrentScreen}
+            submissions={submissions}
+            onRefreshSubmissions={refreshSubmissions}
+          />
         )}
       </main>
 

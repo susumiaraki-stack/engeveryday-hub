@@ -9,6 +9,7 @@ import {
   Lightbulb,
   Sparkles,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { ScreenName, VoiceSubmission, Scenario, UserProfile } from '../types';
@@ -18,7 +19,7 @@ interface VoiceLabProps {
   scenario: Scenario;
   profile: UserProfile;
   onNavigate: (screen: ScreenName) => void;
-  onSubmitVoice: (submission: VoiceSubmission) => void;
+  onSubmitVoice: (submission: VoiceSubmission, audioBlob?: Blob) => Promise<void>;
   onAddXp: (amount: number) => void;
 }
 
@@ -41,9 +42,11 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
   const [recordedSeconds, setRecordedSeconds] = useState(0);
   const [hasRecorded, setHasRecorded] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [accuracyScore, setAccuracyScore] = useState<number | null>(null);
   const [isListeningModel, setIsListeningModel] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
@@ -73,6 +76,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
     setLiveTranscript('');
     setAccuracyScore(null);
     setAudioUrl(null);
+    setRecordedBlob(null);
 
     const started = await audioRecorderRef.current?.start();
     if (!started) {
@@ -84,7 +88,6 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
     setRecordedSeconds(0);
     setHasRecorded(false);
 
-    // Start speech-to-text recognition
     speechEvaluatorRef.current?.start(
       (transcript) => {
         setLiveTranscript(transcript);
@@ -109,17 +112,15 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Stop speech recognition
     speechEvaluatorRef.current?.stop();
 
-    // Stop media recorder and get audio blob
     const blob = await audioRecorderRef.current?.stop();
     if (blob) {
+      setRecordedBlob(blob);
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
       setHasRecorded(true);
 
-      // Evaluate pronunciation accuracy based on keywords
       const spokenLower = liveTranscript.toLowerCase();
       let matchedCount = 0;
       challenge.targetKeywords.forEach((kw) => {
@@ -155,22 +156,18 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
     setAccuracyScore(null);
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioUrl(null);
+    setRecordedBlob(null);
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
-    onAddXp(30);
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     const submission: VoiceSubmission = {
       id: Date.now().toString(),
-      studentName: profile.name,
-      studentNo: `No. 01 • ${profile.grade}`,
-      avatar: profile.avatar,
+      studentName: profile.name || 'Anonymous Student',
+      studentNo: profile.grade,
+      avatar: profile.avatar || '👩‍🎓',
       task: scenario.title,
       submittedAt: 'Just now',
       duration: `0:${recordedSeconds < 10 ? '0' : ''}${recordedSeconds}s`,
@@ -178,14 +175,27 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       appropriatenessScore: 5,
       audioBlobUrl: audioUrl || undefined,
       transcription: liveTranscript || challenge.modelPhrase,
-      feedback: 'Clear pronunciation and polite tone. Good job!',
+      feedback: 'Submitted for teacher evaluation.',
     };
 
-    onSubmitVoice(submission);
+    try {
+      await onSubmitVoice(submission, recordedBlob || undefined);
+      setSubmitted(true);
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+      onAddXp(30);
 
-    setTimeout(() => {
-      onNavigate('dashboard');
-    }, 1800);
+      setTimeout(() => {
+        onNavigate('dashboard');
+      }, 1800);
+    } catch (e) {
+      console.error('Error submitting voice:', e);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -262,9 +272,15 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
                   isRecording ? 'animate-ping' : ''
                 }`}
               ></span>
-              {isRecording ? 'Listening & Recording...' : hasRecorded ? 'Recording Ready' : 'Ready to Record'}
+              {isRecording
+                ? 'Listening & Recording...'
+                : hasRecorded
+                ? 'Recording Ready'
+                : 'Ready to Record'}
             </span>
-            <span className="text-slate-400">00:{recordedSeconds < 10 ? `0${recordedSeconds}` : recordedSeconds} / 00:30s</span>
+            <span className="text-slate-400">
+              00:{recordedSeconds < 10 ? `0${recordedSeconds}` : recordedSeconds} / 00:30s
+            </span>
           </div>
 
           {/* Large Mic Button */}
@@ -308,7 +324,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
               : 'Tap microphone to start speaking'}
           </span>
 
-          {/* Real Audio Player (if recorded) */}
+          {/* Real Audio Player */}
           {audioUrl && (
             <div className="w-full my-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 text-left">
@@ -350,7 +366,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <button
               onClick={handleReset}
-              disabled={!hasRecorded}
+              disabled={!hasRecorded || isSubmitting}
               className="py-3 px-4 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-4 h-4 text-slate-400" />
@@ -359,11 +375,19 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
 
             <button
               onClick={handleSubmit}
-              disabled={!hasRecorded || submitted}
+              disabled={!hasRecorded || isSubmitting || submitted}
               className="py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 hover:opacity-95 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
             >
-              <Send className="w-4 h-4" />
-              {submitted ? 'Submitted!' : 'Submit to Teacher'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Uploading to DB...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  {submitted ? 'Submitted!' : 'Submit to Teacher'}
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -389,7 +413,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
             </div>
             <h3 className="text-lg font-bold text-slate-900">Voice Submitted!</h3>
             <p className="text-xs text-slate-500">
-              Your audio recording and score have been saved to the Teacher Portal. (+30 XP)
+              Your audio recording and score have been saved to the Teacher Portal Cloud DB. (+30 XP)
             </p>
             <div className="w-full bg-orange-50 text-orange-700 py-2 rounded-xl text-xs font-bold">
               Returning to Home...
