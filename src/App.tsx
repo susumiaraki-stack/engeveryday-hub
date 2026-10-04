@@ -10,7 +10,16 @@ import {
   fetchSubmissionsFromDB,
   uploadAndSaveSubmission,
 } from './lib/supabase';
-import { Sparkles, Home, Compass, MessageCircle, User } from 'lucide-react';
+import {
+  Sparkles,
+  Home,
+  Compass,
+  MessageCircle,
+  Lock,
+  KeyRound,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 
 const DEFAULT_PROFILE: UserProfile = {
   name: 'Student',
@@ -21,9 +30,30 @@ const DEFAULT_PROFILE: UserProfile = {
   completedQuests: [],
 };
 
+// Clean any old legacy mockup data from browser localStorage immediately
+if (typeof window !== 'undefined') {
+  try {
+    const cached = localStorage.getItem('eng_submissions');
+    if (
+      cached &&
+      (cached.includes('Nicha Srisuk') ||
+        cached.includes('Punn Tanasiri') ||
+        cached.includes('Mali Charoen'))
+    ) {
+      localStorage.removeItem('eng_submissions');
+    }
+  } catch {}
+}
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
   const [activeScenario, setActiveScenario] = useState<Scenario>(SCENARIOS[0]);
+
+  // Teacher Security Gate (PIN Protected)
+  const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
 
   // Load real profile from localStorage
   const [profile, setProfile] = useState<UserProfile>(() => {
@@ -35,11 +65,18 @@ export default function App() {
     }
   });
 
-  // Submissions: starts empty (no fake data!), loaded from Supabase or localStorage
+  // Real Submissions: starts clean/empty (no fake data!)
   const [submissions, setSubmissions] = useState<VoiceSubmission[]>(() => {
     try {
       const saved = localStorage.getItem('eng_submissions');
-      return saved ? JSON.parse(saved) : [];
+      if (
+        saved &&
+        !saved.includes('Nicha Srisuk') &&
+        !saved.includes('Punn Tanasiri')
+      ) {
+        return JSON.parse(saved);
+      }
+      return [];
     } catch {
       return [];
     }
@@ -103,11 +140,45 @@ export default function App() {
   };
 
   const handleAddSubmission = async (newSub: VoiceSubmission, audioBlob?: Blob) => {
-    // 1. Upload to Supabase
     const savedSub = await uploadAndSaveSubmission(newSub, audioBlob);
-
-    // 2. Add to local state
     setSubmissions((prev) => [savedSub, ...prev]);
+  };
+
+  // Teacher Access Check
+  const handleTeacherAccessRequest = () => {
+    if (isTeacherLoggedIn) {
+      setCurrentScreen('teacher');
+    } else {
+      setPinInput('');
+      setPinError(false);
+      setShowPinModal(true);
+    }
+  };
+
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPin = localStorage.getItem('teacher_pin') || '2026';
+
+    if (pinInput.trim() === correctPin) {
+      setIsTeacherLoggedIn(true);
+      setShowPinModal(false);
+      setCurrentScreen('teacher');
+    } else {
+      setPinError(true);
+    }
+  };
+
+  const handleLockPortal = () => {
+    setIsTeacherLoggedIn(false);
+    setCurrentScreen('dashboard');
+  };
+
+  const handleClearLocalCache = () => {
+    if (window.confirm('Clear all local browser cache and re-sync from Supabase?')) {
+      localStorage.removeItem('eng_submissions');
+      setSubmissions([]);
+      refreshSubmissions();
+    }
   };
 
   return (
@@ -132,7 +203,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Header Nav Links */}
+          {/* Header Navigation Links */}
           <div className="flex items-center gap-1 text-xs">
             <button
               onClick={() => setCurrentScreen('dashboard')}
@@ -170,16 +241,18 @@ export default function App() {
               <span className="hidden sm:inline">Chat</span>
             </button>
 
+            {/* Teacher Gate Button (Locked with PIN) */}
             <button
-              onClick={() => setCurrentScreen('teacher')}
+              onClick={handleTeacherAccessRequest}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentScreen === 'teacher'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
+              title="Teacher Access (PIN Protected)"
             >
-              <User className="w-3.5 h-3.5" />
-              <span>Teacher Portal</span>
+              <Lock className="w-3.5 h-3.5" />
+              <span>Teacher</span>
             </button>
           </div>
         </div>
@@ -224,9 +297,73 @@ export default function App() {
             onNavigate={setCurrentScreen}
             submissions={submissions}
             onRefreshSubmissions={refreshSubmissions}
+            onLockPortal={handleLockPortal}
+            onClearLocalCache={handleClearLocalCache}
           />
         )}
       </main>
+
+      {/* Teacher PIN Modal */}
+      {showPinModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <form
+            onSubmit={handleVerifyPin}
+            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200"
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Security Check
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPinModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto shadow-2xs border border-amber-200/60">
+              <KeyRound className="w-7 h-7" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Teacher Access Only</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Enter teacher PIN to access student submissions & research data.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <input
+                type="password"
+                maxLength={6}
+                value={pinInput}
+                onChange={(e) => {
+                  setPinInput(e.target.value);
+                  setPinError(false);
+                }}
+                placeholder="Enter PIN (Default: 2026)"
+                className="w-full text-center tracking-widest text-lg font-bold py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-orange-500"
+                autoFocus
+                required
+              />
+              {pinError && (
+                <p className="text-[11px] text-red-600 font-semibold flex items-center justify-center gap-1 pt-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> Incorrect PIN. Try again.
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-xs font-bold rounded-xl shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+            >
+              Unlock Portal
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-500">

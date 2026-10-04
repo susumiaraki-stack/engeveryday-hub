@@ -12,6 +12,8 @@ import {
   RefreshCw,
   Sparkles,
   Inbox,
+  Lock,
+  Trash2,
 } from 'lucide-react';
 import type { ScreenName, VoiceSubmission } from '../types';
 import {
@@ -25,12 +27,16 @@ interface TeacherPortalProps {
   onNavigate: (screen: ScreenName) => void;
   submissions: VoiceSubmission[];
   onRefreshSubmissions: () => Promise<void>;
+  onLockPortal: () => void;
+  onClearLocalCache: () => void;
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onNavigate,
   submissions,
   onRefreshSubmissions,
+  onLockPortal,
+  onClearLocalCache,
 }) => {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [feedbackSuccessId, setFeedbackSuccessId] = useState<string | null>(null);
@@ -143,26 +149,42 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onClearLocalCache}
+            className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+            title="Clear old cached mockup data"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+
           <button
             onClick={() => setShowConfigModal(true)}
-            className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+            className={`px-2 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 border transition-all cursor-pointer ${
               isConfigured
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                 : 'bg-amber-50 text-amber-700 border-amber-300'
             }`}
           >
             <Database className="w-3 h-3" />
-            <span>{isConfigured ? 'Supabase: ON' : 'Connect DB'}</span>
+            <span>{isConfigured ? 'DB: ON' : 'Connect DB'}</span>
           </button>
 
           <button
             onClick={handleExportCSV}
             disabled={totalSubmissions === 0}
-            className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="px-2.5 py-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-[11px] font-bold rounded-xl shadow-xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" />
-            Export CSV
+            <Download className="w-3 h-3" />
+            Export
+          </button>
+
+          <button
+            onClick={onLockPortal}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
+            title="Lock Portal (Sign Out)"
+          >
+            <Lock className="w-4 h-4 text-slate-600" />
           </button>
         </div>
       </div>

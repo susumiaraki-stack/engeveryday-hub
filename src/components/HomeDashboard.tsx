@@ -371,11 +371,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate('teacher')}
+          onClick={() => setIsEditingProfile(true)}
           className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
         >
           <User className="w-5 h-5" />
-          <span className="text-[10px]">Teacher</span>
+          <span className="text-[10px]">Profile</span>
         </button>
       </div>
     </div>
