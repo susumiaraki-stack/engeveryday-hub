@@ -115,20 +115,23 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
   // Real calculations
   const totalSubmissions = submissions.length;
+  const gradedFluency = submissions.filter((s) => (s.fluencyScore || 0) > 0);
   const avgFluency =
-    totalSubmissions > 0
+    gradedFluency.length > 0
       ? (
-          submissions.reduce((acc, curr) => acc + (curr.fluencyScore || 0), 0) / totalSubmissions
+          gradedFluency.reduce((acc, curr) => acc + (curr.fluencyScore || 0), 0) /
+          gradedFluency.length
         ).toFixed(1)
-      : '0.0';
+      : '-';
 
+  const gradedPoliteness = submissions.filter((s) => (s.appropriatenessScore || 0) > 0);
   const avgPoliteness =
-    totalSubmissions > 0
+    gradedPoliteness.length > 0
       ? (
-          submissions.reduce((acc, curr) => acc + (curr.appropriatenessScore || 0), 0) /
-          totalSubmissions
+          gradedPoliteness.reduce((acc, curr) => acc + (curr.appropriatenessScore || 0), 0) /
+          gradedPoliteness.length
         ).toFixed(1)
-      : '0.0';
+      : '-';
 
   return (
     <div className="flex flex-col min-h-full pb-10 bg-[#faf8f5] text-slate-800 font-sans">
@@ -381,7 +384,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-bold text-slate-700">Fluency (ความคล่องแคล่ว):</span>
                             <span className="font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm">
-                              {sub.fluencyScore}/5
+                              {sub.fluencyScore > 0 ? `${sub.fluencyScore}/5` : 'รอให้คะแนน'}
                             </span>
                           </div>
                           <div className="flex gap-1 text-amber-400">
@@ -414,7 +417,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-bold text-slate-700">Politeness (ความสุภาพ):</span>
                             <span className="font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
-                              {sub.appropriatenessScore}/5
+                              {sub.appropriatenessScore > 0 ? `${sub.appropriatenessScore}/5` : 'รอให้คะแนน'}
                             </span>
                           </div>
                           <div className="flex gap-1 text-emerald-500">

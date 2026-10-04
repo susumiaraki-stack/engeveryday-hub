@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { ScreenName, VoiceSubmission, Scenario, UserProfile } from '../types';
-import { speakEnglish, SpeechEvaluator, AudioRecorder } from '../utils/speech';
+import { speakEnglish, AudioRecorder } from '../utils/speech';
 
 interface VoiceLabProps {
   scenario: Scenario;
@@ -43,25 +43,16 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
   const [hasRecorded, setHasRecorded] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [liveTranscript, setLiveTranscript] = useState('');
-  const [accuracyScore, setAccuracyScore] = useState<number | null>(null);
-  const [politenessScore, setPolitenessScore] = useState<number | null>(null);
   const [isListeningModel, setIsListeningModel] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
-  const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
-  const [politeFeedback, setPoliteFeedback] = useState<string>('');
-
   const timerRef = useRef<number | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
-  const speechEvaluatorRef = useRef<SpeechEvaluator | null>(null);
-  const transcriptRef = useRef<string>('');
 
   useEffect(() => {
     audioRecorderRef.current = new AudioRecorder();
-    speechEvaluatorRef.current = new SpeechEvaluator();
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -78,34 +69,18 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
 
   const startRecordingSession = async () => {
     setPermissionError(null);
-    setLiveTranscript('');
-    transcriptRef.current = '';
-    setMatchedKeywords([]);
-    setPoliteFeedback('');
-    setAccuracyScore(null);
-    setPolitenessScore(null);
     setAudioUrl(null);
     setRecordedBlob(null);
 
     const started = await audioRecorderRef.current?.start();
     if (!started) {
-      setPermissionError('Please allow microphone access in your browser to record your voice.');
+      setPermissionError('กรุณาอนุญาตให้เข้าถึงไมโครโฟนบนเบราว์เซอร์ของคุณเพื่ออัดเสียง');
       return;
     }
 
     setIsRecording(true);
     setRecordedSeconds(0);
     setHasRecorded(false);
-
-    speechEvaluatorRef.current?.start(
-      (transcript) => {
-        transcriptRef.current = transcript;
-        setLiveTranscript(transcript);
-      },
-      (err) => {
-        console.warn('Speech recognition warning:', err);
-      }
-    );
 
     timerRef.current = window.setInterval(() => {
       setRecordedSeconds((prev) => {
@@ -122,8 +97,6 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    speechEvaluatorRef.current?.stop();
-
     const blob = await audioRecorderRef.current?.stop();
     if (blob) {
       setRecordedBlob(blob);
@@ -131,56 +104,6 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       setAudioUrl(url);
     }
     setHasRecorded(true);
-
-    const spokenLower = transcriptRef.current.trim().toLowerCase();
-
-    // 1. Calculate Fluency (Keyword match & vocabulary accuracy)
-    const matched: string[] = [];
-    challenge.targetKeywords.forEach((kw) => {
-      if (spokenLower.includes(kw.toLowerCase())) {
-        matched.push(kw);
-      }
-    });
-    setMatchedKeywords(matched);
-
-    let calculatedFluency = 1;
-    if (spokenLower.length === 0) {
-      calculatedFluency = 1;
-    } else if (matched.length === challenge.targetKeywords.length) {
-      calculatedFluency = 5; // All keywords said!
-    } else if (matched.length >= 2) {
-      calculatedFluency = 4;
-    } else if (matched.length === 1) {
-      calculatedFluency = 3;
-    } else if (spokenLower.split(' ').length >= 3) {
-      calculatedFluency = 2; // Spoke words, but missed target keywords
-    } else {
-      calculatedFluency = 1;
-    }
-    setAccuracyScore(calculatedFluency);
-
-    // 2. Calculate Politeness (Pragmatic markers: polite vs neutral vs blunt)
-    const politeMarkers = ['please', 'could', 'would', 'may', 'excuse', 'thank', 'pardon', 'kindly'];
-    const impoliteMarkers = ['give me', 'bring me', 'i want'];
-
-    const hasPolite = politeMarkers.some((marker) => spokenLower.includes(marker));
-    const hasImpolite = impoliteMarkers.some((marker) => spokenLower.includes(marker));
-
-    let calculatedPoliteness = 3;
-    if (spokenLower.length === 0) {
-      calculatedPoliteness = 1;
-      setPoliteFeedback('ไม่ได้ยินเสียงพูด ชัดเจน');
-    } else if (hasPolite) {
-      calculatedPoliteness = 5;
-      setPoliteFeedback('สุภาพมาก (ตรวจพบคำสุภาพ เช่น please, could you)');
-    } else if (hasImpolite) {
-      calculatedPoliteness = 2;
-      setPoliteFeedback('ห้วนเกินไป (แนะนำให้เลี่ยง give me หรือ I want)');
-    } else {
-      calculatedPoliteness = 3;
-      setPoliteFeedback('ระดับทั่วไป (แนะนำให้เติม please หรือ could you เพื่อได้ 5 ดาว)');
-    }
-    setPolitenessScore(calculatedPoliteness);
   };
 
   const handleToggleRecording = () => {
@@ -193,12 +116,9 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
 
   const handleReset = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    speechEvaluatorRef.current?.stop();
     setIsRecording(false);
     setRecordedSeconds(0);
     setHasRecorded(false);
-    setLiveTranscript('');
-    setAccuracyScore(null);
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioUrl(null);
     setRecordedBlob(null);
@@ -216,11 +136,11 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       task: scenario.title,
       submittedAt: 'Just now',
       duration: `0:${recordedSeconds < 10 ? '0' : ''}${recordedSeconds}s`,
-      fluencyScore: accuracyScore !== null ? accuracyScore : 1,
-      appropriatenessScore: politenessScore !== null ? politenessScore : 3,
+      fluencyScore: 0, // รอดำเนินการประเมินโดยคุณครู
+      appropriatenessScore: 0,
       audioBlobUrl: audioUrl || undefined,
-      transcription: liveTranscript || challenge.modelPhrase,
-      feedback: 'Submitted for teacher evaluation.',
+      transcription: challenge.modelPhrase,
+      feedback: 'รอดำเนินการประเมินจากคุณครู',
     };
 
     try {
@@ -272,7 +192,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
           </div>
           <div>
             <span className="inline-block px-2.5 py-0.5 bg-rose-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider mb-1">
-              SPEAKING CHALLENGE
+              SPEAKING MISSION
             </span>
             <p className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
               {challenge.mission}
@@ -304,7 +224,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
             }`}
           >
             <Volume2 className="w-4 h-4 text-emerald-600" />
-            {isListeningModel ? 'Playing Audio...' : 'Listen Model Audio'}
+            {isListeningModel ? 'Playing Audio...' : 'Listen Model Audio (ฟังเสียงตัวอย่าง)'}
           </button>
         </div>
 
@@ -318,10 +238,10 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
                 }`}
               ></span>
               {isRecording
-                ? 'Listening & Recording...'
+                ? 'กำลังบันทึกเสียง...'
                 : hasRecorded
-                ? 'Recording Ready'
-                : 'Ready to Record'}
+                ? 'บันทึกเสียงเรียบร้อย'
+                : 'พร้อมบันทึกเสียง'}
             </span>
             <span className="text-slate-400">
               00:{recordedSeconds < 10 ? `0${recordedSeconds}` : recordedSeconds} / 00:30s
@@ -363,84 +283,23 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
 
           <span className="text-xs text-slate-500 mb-3">
             {isRecording
-              ? 'Speaking... Tap mic again when finished'
+              ? 'กำลังพูด... กดปุ่มไมค์อีกครั้งเมื่อพูดจบ'
               : hasRecorded
-              ? 'Tap mic to re-record'
-              : 'Tap microphone to start speaking'}
+              ? 'กดปุ่มไมค์เพื่ออัดเสียงใหม่'
+              : 'แตะปุ่มไมโครโฟนเพื่อเริ่มพูดภาษาอังกฤษ'}
           </span>
 
-          {/* Real Audio Player */}
-          {audioUrl && (
-            <div className="w-full my-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 text-left">
-                Your Recorded Voice:
+          {/* Real Audio Player & Preview Card */}
+          {hasRecorded && audioUrl && (
+            <div className="w-full my-3 p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 text-left space-y-2">
+              <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>บันทึกเสียงของคุณเรียบร้อยแล้ว</span>
+              </div>
+              <p className="text-[11px] text-emerald-700 leading-snug">
+                ลองกดฟังเสียงของตัวเองเพื่อตรวจสอบความชัดเจน ก่อนส่งให้คุณครูตรวจประเมิน
               </p>
-              <audio controls src={audioUrl} className="w-full h-9" />
-            </div>
-          )}
-
-          {/* Live Speech Recognition Transcript */}
-          {liveTranscript && (
-            <div className="w-full my-2 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 text-left">
-              <span className="text-[10px] font-bold text-emerald-700 block uppercase">
-                AI Speech Recognition:
-              </span>
-              <p className="text-xs font-semibold text-slate-800 mt-1">"{liveTranscript}"</p>
-            </div>
-          )}
-
-          {/* Fluency & Politeness Score Badges & Diagnostic Feedback */}
-          {(accuracyScore !== null || politenessScore !== null) && (
-            <div className="w-full space-y-2 mb-4 text-left">
-              <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-amber-900 block">Fluency (ความคล่องแคล่ว):</span>
-                  <span className="text-[10px] text-amber-700">วัดจากการตรวจจับคำศัพท์เป้าหมาย</span>
-                </div>
-                <span className="font-black text-amber-700 bg-white px-2.5 py-1 rounded-lg shadow-2xs text-sm">
-                  ⭐ {accuracyScore ?? 1} / 5
-                </span>
-              </div>
-
-              {/* Keyword Breakdown Pill Tags */}
-              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">
-                  คำศัพท์เป้าหมายในภารกิจ (Target Keywords):
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {challenge.targetKeywords.map((kw) => {
-                    const isMatched = matchedKeywords.some(
-                      (m) => m.toLowerCase() === kw.toLowerCase()
-                    );
-                    return (
-                      <span
-                        key={kw}
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
-                          isMatched
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-slate-200/70 text-slate-500 line-through'
-                        }`}
-                      >
-                        {isMatched ? '✅' : '❌'} {kw}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-emerald-900 block">Politeness (ความสุภาพ):</span>
-                  {politeFeedback && (
-                    <span className="text-[10px] text-emerald-700 block mt-0.5">
-                      {politeFeedback}
-                    </span>
-                  )}
-                </div>
-                <span className="font-black text-emerald-700 bg-white px-2.5 py-1 rounded-lg shadow-2xs text-sm shrink-0 ml-2">
-                  ⭐ {politenessScore ?? 3} / 5
-                </span>
-              </div>
+              <audio controls src={audioUrl} className="w-full h-9 rounded-lg" />
             </div>
           )}
 
@@ -460,7 +319,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
               className="py-3 px-4 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-4 h-4 text-slate-400" />
-              Reset
+              อัดใหม่ (Reset)
             </button>
 
             <button
@@ -470,12 +329,12 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Uploading to DB...
+                  <Loader2 className="w-4 h-4 animate-spin" /> กำลังส่ง...
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  {submitted ? 'Submitted!' : 'Submit to Teacher'}
+                  {submitted ? 'ส่งเรียบร้อย!' : 'ส่งให้คุณครู (Submit)'}
                 </>
               )}
             </button>
@@ -503,10 +362,10 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
             </div>
             <h3 className="text-lg font-bold text-slate-900">Voice Submitted!</h3>
             <p className="text-xs text-slate-500">
-              Your audio recording and score have been saved to the Teacher Portal Cloud DB. (+30 XP)
+              ส่งคลิปเสียงของคุณไปยังระบบของคุณครูเรียบร้อยแล้ว (+30 XP)
             </p>
             <div className="w-full bg-orange-50 text-orange-700 py-2 rounded-xl text-xs font-bold">
-              Returning to Home...
+              กำลังกลับสู่หน้าหลัก...
             </div>
           </div>
         </div>
