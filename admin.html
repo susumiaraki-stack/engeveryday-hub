@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ครู - English Tracker</title>
+    
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="https://api.dicebear.com/7.x/bottts/png?seed=English&size=192">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8fafc; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .modal { transition: opacity 0.2s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <i class="ph-bold ph-chart-polar text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-800 hidden sm:block">Admin Workspace</h1>
+                <p class="text-[10px] text-slate-400 font-bold hidden sm:block">ระบบจัดการและประเมินผลการเรียนรู้ของนักเรียน</p>
+            </div>
+        </div>
+        <div id="userInfo" class="hidden flex items-center gap-3 sm:gap-4">
+            <div class="text-right hidden sm:block">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Teacher Account</p>
+                <p id="adminEmail" class="text-sm font-bold text-slate-700"></p>
+            </div>
+            <a href="index.html" class="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl text-emerald-600 font-bold hover:bg-emerald-100 transition-colors text-sm">
+                <i class="ph-bold ph-student"></i> <span>หน้านักเรียน</span>
+            </a>
+            <button id="logoutBtn" class="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl text-slate-600 font-bold hover:bg-red-50 hover:text-red-500 transition-colors text-sm" title="ออกจากระบบ">
+                <i class="ph-bold ph-sign-out"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Login Section -->
+        <div id="loginSection" class="max-w-md mx-auto mt-16 bg-white p-8 rounded-[2rem] shadow-xl text-center border border-slate-100">
+            <i class="ph-fill ph-lock-key text-6xl text-slate-300 mb-4 inline-block"></i>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">เข้าสู่ระบบสำหรับครู</h2>
+            <p class="text-xs text-slate-500 mb-6">เข้าใช้งานด้วยบัญชี Google หรือ รหัสผ่านครู</p>
+            
+            <div class="space-y-3">
+                <button id="loginBtn" class="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+                    <i class="ph-bold ph-google-logo text-xl"></i> เข้าสู่ระบบด้วย Google
+                </button>
+
+                <!-- QoL: Teacher PIN Login Backup -->
+                <button id="pinLoginBtn" class="w-full flex justify-center items-center gap-2 py-3 px-6 rounded-xl text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-all active:scale-95">
+                    <i class="ph-bold ph-key text-lg"></i> เข้าสู่ระบบด้วย Teacher PIN (2026)
+                </button>
+            </div>
+            
+            <p class="text-[11px] text-slate-400 mt-6 leading-relaxed">
+                อนุญาตเฉพาะคุณครูผู้ดูแลระบบเท่านั้น
+            </p>
+        </div>
+
+        <div id="dashboardSection" class="hidden">
+            <!-- Stats & Analytics Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+                        <i class="ph-fill ph-files absolute -right-2 -bottom-2 text-8xl text-white opacity-10"></i>
+                        <p class="text-indigo-100 text-sm font-bold mb-1">ยอดส่งงานทั้งหมด</p>
+                        <h3 id="statTotal" class="text-5xl font-black mb-4">0</h3>
+                        <div class="flex items-center gap-2 text-sm bg-white/20 w-fit px-3.5 py-1.5 rounded-full backdrop-blur-xs">
+                            <i class="ph-fill ph-clock"></i> รอการตรวจ <span id="statPending" class="font-bold">0</span> งาน
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col min-h-[250px]">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">📅 การส่งงานรายวัน</p>
+                    <div class="flex-1 flex items-center justify-center">
+                        <canvas id="activityChart" class="max-h-[200px] w-full"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col min-h-[250px]">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">🎬 สื่อที่นักเรียนใช้</p>
+                    <div class="flex-1 flex items-center justify-center">
+                        <canvas id="mediaChart" class="max-h-[200px]"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar & Filter Bar -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800">ระบบตรวจงาน (Grading)</h2>
+                    <p class="text-xs text-slate-500">คลิกที่ปุ่มตรวจงานเพื่อประเมินคะแนนและข้อเสนอแนะ</p>
+                </div>
+                <div class="flex flex-col w-full sm:w-auto gap-2">
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <input type="text" id="searchInput" placeholder="ค้นหาชื่อนักเรียน / หัวข้อ..." class="w-full sm:w-64 px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-sm bg-white">
+                        <button id="exportCsvBtn" class="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-bold hover:bg-emerald-100 transition-colors whitespace-nowrap text-sm flex items-center gap-1.5 shadow-2xs">
+                            <i class="ph-bold ph-download-simple"></i> Excel
+                        </button>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <!-- QoL: Filter by Grading Status -->
+                        <select id="filterStatus" class="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-xs font-bold bg-white text-slate-700">
+                            <option value="">📋 สถานะทั้งหมด</option>
+                            <option value="pending">🟡 รอตรวจ (Pending)</option>
+                            <option value="graded">🟢 ตรวจแล้ว (Graded)</option>
+                        </select>
+                        <select id="filterMedia" class="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-xs font-bold bg-white text-slate-700">
+                            <option value="">🎬 สื่อทั้งหมด</option>
+                            <option value="YouTube">🎬 YouTube</option>
+                            <option value="Podcast">🎧 Podcast</option>
+                            <option value="Article">📖 บทความ</option>
+                            <option value="Game">🎮 เกม</option>
+                            <option value="Other">✨ อื่นๆ</option>
+                        </select>
+                        <select id="filterSkill" class="px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 text-xs font-bold bg-white text-slate-700">
+                            <option value="">🏷️ ทักษะทั้งหมด</option>
+                            <option value="Listening">🎧 Listening</option>
+                            <option value="Reading">📖 Reading</option>
+                            <option value="Vocabulary">📝 Vocabulary</option>
+                            <option value="Grammar">📐 Grammar</option>
+                            <option value="Speaking">🗣️ Speaking</option>
+                            <option value="Writing">✍️ Writing</option>
+                        </select>
+                        <button id="clearFilters" class="px-3 py-2 rounded-xl border border-slate-200 text-slate-500 text-xs font-bold hover:bg-slate-100 transition-colors">✕ ล้างตัวกรอง</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submissions Table -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[850px]">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                                <th class="p-4 w-10">
+                                    <input type="checkbox" id="selectAll" class="w-4 h-4 rounded accent-indigo-600 cursor-pointer" title="เลือกทั้งหมด">
+                                </th>
+                                <th class="p-4 font-bold w-32">เวลา</th>
+                                <th class="p-4 font-bold w-48">นักเรียน</th>
+                                <th class="p-4 font-bold max-w-[200px]">รายละเอียด</th>
+                                <th class="p-4 font-bold w-28">สื่อ / ทักษะ</th>
+                                <th class="p-4 font-bold text-center w-24">หลักฐาน</th>
+                                <th class="p-4 font-bold text-center w-36">สถานะ/ให้คะแนน</th>
+                                <th class="p-4 font-bold text-center w-16"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-100 text-sm">
+                            <tr><td colspan="8" class="p-8 text-center text-slate-400">กำลังโหลด...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Resource Board Management Section -->
+            <div class="mt-10">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800">📌 จัดการสื่อแนะนำ (Resource Board)</h2>
+                        <p class="text-xs text-slate-500">สื่อที่คุณครูเพิ่มจะปรากฏให้นักเรียนเห็นในแท็บกระดานผู้นำ</p>
+                    </div>
+                    <button id="addResourceBtn" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm text-sm">
+                        <i class="ph-bold ph-plus"></i> เพิ่มสื่อแนะนำ
+                    </button>
+                </div>
+                <div id="resourceAdminList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="text-slate-400 text-sm">กำลังโหลด...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bulk Grade Floating Bar -->
+    <div id="bulkBar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-indigo-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl shadow-indigo-300 flex items-center gap-4">
+        <span class="text-sm font-black">เลือกแล้ว <span id="bulkCount">0</span> งาน</span>
+        <div class="w-px h-5 bg-indigo-400"></div>
+        <button id="bulkGradeBtn" class="bg-white text-indigo-700 font-black px-4 py-1.5 rounded-xl text-sm hover:bg-indigo-50 transition-colors flex items-center gap-2">
+            <i class="ph-bold ph-star"></i> ให้คะแนนทั้งหมด
+        </button>
+        <button id="bulkCancelBtn" class="text-indigo-200 hover:text-white transition-colors p-1">
+            <i class="ph-bold ph-x text-lg"></i>
+        </button>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm opacity-0">
+        <div class="modal-content transform scale-95 relative max-w-4xl w-full mx-4">
+            <button id="closeModalBtn" class="absolute -top-12 right-0 text-white hover:text-slate-300 bg-slate-800 p-2 rounded-full"><i class="ph-bold ph-x text-2xl"></i></button>
+            <img id="modalImage" src="" class="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl bg-white">
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Reg failed:', err));
+            });
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvuhYgTjbHatXOvVLjGcGrAEuqHINTmd0",
+            authDomain: "engtiktokapp.firebaseapp.com",
+            projectId: "engtiktokapp",
+            storageBucket: "engtiktokapp.firebasestorage.app",
+            messagingSenderId: "213733938342",
+            appId: "1:213733938342:web:575b536cd37b5a78b8d067"
+        };
+
+        const ALLOWED_EMAILS = ['susumiaraki@gmail.com', 's67121110074@ssru.ac.th'];
+        const TEACHER_PIN = '2026';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+        setPersistence(auth, browserLocalPersistence);
+
+        let allLogs = [];
+        let myChart = null;
+        let myMediaChart = null;
+        let selectedIds = new Set();
+        let isPinAuthenticated = sessionStorage.getItem('teacherPinAuth') === 'true';
+
+        document.getElementById('loginBtn').addEventListener('click', () => signInWithPopup(auth, provider));
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            sessionStorage.removeItem('teacherPinAuth');
+            signOut(auth).then(() => location.reload());
+        });
+
+        // QoL: Teacher PIN Login Backup
+        document.getElementById('pinLoginBtn').addEventListener('click', () => {
+            Swal.fire({
+                title: '🔑 Teacher PIN',
+                text: 'กรอกรหัสผ่านครูผู้สอนเพื่อเข้าใช้งาน',
+                input: 'password',
+                inputAttributes: { maxlength: 6, autofocus: 'autofocus', style: 'text-align: center; letter-spacing: 0.3em; font-size: 1.5rem;' },
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                confirmButtonText: 'เข้าสู่ระบบ',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: (pin) => {
+                    if (pin === TEACHER_PIN) {
+                        return true;
+                    }
+                    Swal.showValidationMessage('รหัสผ่านไม่ถูกต้อง');
+                    return false;
+                }
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    sessionStorage.setItem('teacherPinAuth', 'true');
+                    isPinAuthenticated = true;
+                    showDashboardUI('Teacher (PIN Access)');
+                }
+            });
+        });
+
+        function showDashboardUI(adminIdentifier) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('adminEmail').textContent = adminIdentifier;
+            loadData();
+            loadResourcesAdmin();
+        }
+
+        // Check Auth
+        if (isPinAuthenticated) {
+            showDashboardUI('Teacher (PIN Access)');
+        }
+
+        onAuthStateChanged(auth, async user => {
+            if (isPinAuthenticated) return;
+
+            if (user) {
+                if (!ALLOWED_EMAILS.includes(user.email)) {
+                    await signOut(auth);
+                    document.getElementById('loginSection').innerHTML = `
+                        <div class="flex flex-col items-center">
+                            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="ph-fill ph-shield-warning text-4xl text-red-500"></i>
+                            </div>
+                            <h2 class="text-2xl font-black text-slate-800 mb-2">ไม่มีสิทธิ์เข้าถึง</h2>
+                            <p class="text-slate-500 text-sm mb-1">บัญชีนี้ไม่ได้รับอนุญาตให้เข้าใช้งาน</p>
+                            <p class="text-xs text-slate-400 mb-6 font-mono bg-slate-100 px-3 py-1.5 rounded-lg">${user.email}</p>
+                            <div class="flex gap-2">
+                                <button onclick="location.reload()" class="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-700 transition-colors text-sm">
+                                    <i class="ph-bold ph-arrow-counter-clockwise"></i> ลองบัญชีอื่น
+                                </button>
+                                <a href="index.html" class="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors text-sm">
+                                    กลับหน้านักเรียน
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('loginSection').classList.remove('hidden');
+                    return;
+                }
+                showDashboardUI(user.email);
+            } else {
+                if (!isPinAuthenticated) {
+                    document.getElementById('loginSection').classList.remove('hidden');
+                    document.getElementById('dashboardSection').classList.add('hidden');
+                    document.getElementById('userInfo').classList.add('hidden');
+                }
+            }
+        });
+
+        function loadData() {
+            onSnapshot(query(collection(db, "learning_logs"), orderBy("timestamp", "desc")), (snapshot) => {
+                allLogs = [];
+                snapshot.forEach(doc => allLogs.push({ id: doc.id, ...doc.data() }));
+                renderDashboard();
+                renderTable();
+            });
+        }
+
+        function renderDashboard() {
+            document.getElementById('statTotal').textContent = allLogs.length;
+            const pending = allLogs.filter(l => !l.score).length;
+            document.getElementById('statPending').textContent = pending;
+
+            // Daily activity bar chart
+            const datesCount = {};
+            allLogs.forEach(l => {
+                if(l.timestamp) {
+                    const date = l.timestamp.toDate().toLocaleDateString('th-TH', {day:'numeric', month:'short'});
+                    datesCount[date] = (datesCount[date] || 0) + 1;
+                }
+            });
+            const labels = Object.keys(datesCount).slice(0, 7).reverse();
+            const data = Object.values(datesCount).slice(0, 7).reverse();
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: 'จำนวนการส่งงานรายวัน', data: data, backgroundColor: '#6366f1', borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+
+            // Media type doughnut chart
+            const mediaCounts = {};
+            const MEDIA_CHART_COLORS = { YouTube:'#ef4444', Podcast:'#a855f7', Article:'#3b82f6', Game:'#22c55e', Other:'#94a3b8' };
+            allLogs.forEach(l => {
+                const m = l.mediaType || 'Other';
+                mediaCounts[m] = (mediaCounts[m] || 0) + 1;
+            });
+            const mediaLabels = Object.keys(mediaCounts);
+            const mediaData = Object.values(mediaCounts);
+            const mediaColors = mediaLabels.map(m => MEDIA_CHART_COLORS[m] || '#94a3b8');
+            const ctx2 = document.getElementById('mediaChart').getContext('2d');
+            if(myMediaChart) myMediaChart.destroy();
+            myMediaChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: { labels: mediaLabels, datasets: [{ data: mediaData, backgroundColor: mediaColors, borderWidth: 2, borderColor: '#fff' }] },
+                options: {
+                    responsive: true, maintainAspectRatio: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11, weight: 'bold' }, padding: 10, boxWidth: 12 } } },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        // Bulk Selection Helpers
+        function updateBulkBar() {
+            const count = selectedIds.size;
+            document.getElementById('bulkCount').textContent = count;
+            document.getElementById('bulkBar').classList.toggle('hidden', count === 0);
+            const allVisible = [...document.querySelectorAll('.row-checkbox')];
+            const allChecked = allVisible.length > 0 && allVisible.every(cb => cb.checked);
+            document.getElementById('selectAll').checked = allChecked;
+            document.getElementById('selectAll').indeterminate = !allChecked && allVisible.some(cb => cb.checked);
+        }
+
+        document.getElementById('selectAll').addEventListener('change', (e) => {
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+                const row = cb.closest('tr');
+                if (e.target.checked) { selectedIds.add(cb.dataset.id); row.classList.add('bg-indigo-50'); }
+                else { selectedIds.delete(cb.dataset.id); row.classList.remove('bg-indigo-50'); }
+            });
+            updateBulkBar();
+        });
+
+        document.getElementById('bulkCancelBtn').addEventListener('click', () => {
+            selectedIds.clear();
+            document.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = false; cb.closest('tr').classList.remove('bg-indigo-50'); });
+            document.getElementById('selectAll').checked = false;
+            updateBulkBar();
+        });
+
+        // QoL: Bulk Grade with quick templates
+        document.getElementById('bulkGradeBtn').addEventListener('click', () => {
+            if (selectedIds.size === 0) return;
+            Swal.fire({
+                title: `ให้คะแนน ${selectedIds.size} งาน`,
+                html: `
+                    <div class="text-left space-y-3">
+                        <p class="text-xs text-slate-500">คะแนนและ Feedback นี้จะถูกใส่ให้งานทุกชิ้นที่เลือกพร้อมกัน</p>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">เลือกคะแนนด่วน (เต็ม 10)</label>
+                            <div class="flex gap-1.5 mb-2">
+                                <button type="button" onclick="document.getElementById('swal-score').value=10" class="flex-1 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 border border-green-200">10</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=9" class="flex-1 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 border border-green-200">9</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=8" class="flex-1 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 border border-blue-200">8</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=7" class="flex-1 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 border border-amber-200">7</button>
+                            </div>
+                            <input id="swal-score" type="number" min="0" max="10" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-center text-xl font-bold focus:border-indigo-500" placeholder="0–10" value="10">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ข้อความตอบกลับด่วน (Quick Feedback)</label>
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <button type="button" onclick="document.getElementById('swal-feedback').value='ยอดเยี่ยมมาก! สรุปได้ชัดเจน 🌟'" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-bold">🌟 ยอดเยี่ยม</button>
+                                <button type="button" onclick="document.getElementById('swal-feedback').value='ทำได้ดีมาก ฝึกสม่ำเสมอนะครับ 👏'" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-bold">👏 สม่ำเสมอ</button>
+                                <button type="button" onclick="document.getElementById('swal-feedback').value='ดีแล้ว ลองฝึกคำศัพท์เพิ่มเติมนะ 💡'" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-bold">💡 เพิ่มคำศัพท์</button>
+                            </div>
+                            <textarea id="swal-feedback" rows="2" placeholder="เช่น ทำได้ดีมาก! ลองฝึกพูดเพิ่มนะ" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-xs focus:border-indigo-500"></textarea>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true, confirmButtonText: '✅ บันทึกทั้งหมด', confirmButtonColor: '#4f46e5', cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const score = document.getElementById('swal-score').value;
+                    if (!score || score < 0 || score > 10) { Swal.showValidationMessage('กรุณาใส่คะแนน 0–10'); return false; }
+                    return { score, feedback: document.getElementById('swal-feedback').value };
+                }
+            }).then(async (result) => {
+                if (!result.isConfirmed) return;
+                const { score, feedback } = result.value;
+                const ids = [...selectedIds];
+                try {
+                    await Promise.all(ids.map(id => updateDoc(doc(db, "learning_logs", id), { score, teacherFeedback: feedback })));
+                    selectedIds.clear();
+                    document.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = false; cb.closest('tr').classList.remove('bg-indigo-50'); });
+                    document.getElementById('selectAll').checked = false;
+                    updateBulkBar();
+                    Swal.fire({ icon: 'success', title: `บันทึกแล้ว ${ids.length} งาน! 🎉`, timer: 1800, showConfirmButton: false });
+                } catch (e) { Swal.fire('Error', e.message, 'error'); }
+            });
+        });
+
+        function renderTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const mediaFilter = document.getElementById('filterMedia').value;
+            const skillFilter = document.getElementById('filterSkill').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            let filtered = allLogs.filter(log => {
+                const matchName = (log.studentName || '').toLowerCase().includes(search) || (log.topic || '').toLowerCase().includes(search);
+                const matchMedia = !mediaFilter || log.mediaType === mediaFilter;
+                const matchSkill = !skillFilter || (log.skills && log.skills.includes(skillFilter));
+                const matchStatus = !statusFilter || (statusFilter === 'pending' ? !log.score : !!log.score);
+                return matchName && matchMedia && matchSkill && matchStatus;
+            });
+
+            const tbody = document.getElementById('tableBody');
+            if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`; return; }
+
+            const MEDIA_ICON = { YouTube:'🎬', Podcast:'🎧', Article:'📖', Game:'🎮', Other:'✨' };
+            const MEDIA_BADGE = {
+                YouTube: 'bg-red-50 text-red-600 border-red-200',
+                Podcast: 'bg-purple-50 text-purple-600 border-purple-200',
+                Article: 'bg-blue-50 text-blue-600 border-blue-200',
+                Game:    'bg-green-50 text-green-600 border-green-200',
+                Other:   'bg-slate-100 text-slate-500 border-slate-200',
+            };
+            const SKILL_CHIP = {
+                Listening:  'bg-cyan-50 text-cyan-700',
+                Reading:    'bg-blue-50 text-blue-700',
+                Vocabulary: 'bg-violet-50 text-violet-700',
+                Grammar:    'bg-orange-50 text-orange-700',
+                Speaking:   'bg-rose-50 text-rose-700',
+                Writing:    'bg-emerald-50 text-emerald-700',
+            };
+
+            tbody.innerHTML = '';
+            filtered.forEach(data => {
+                let dStr = "-", tStr = "";
+                if (data.timestamp) {
+                    const d = data.timestamp.toDate();
+                    dStr = d.toLocaleDateString('th-TH', {day:'numeric', month:'short'});
+                    tStr = d.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+                }
+                let imgBtn = `<span class="text-slate-300 text-xs">ไม่มีรูป</span>`;
+                if (data.image) imgBtn = `<button onclick="openModal('${data.image}')" class="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors" title="ดูรูปภาพ"><i class="ph-bold ph-image text-xl"></i></button>`;
+
+                let gradeBtn = data.score
+                    ? `<button onclick="gradeWork('${data.id}', '${data.studentName}', '${data.score}', '${(data.teacherFeedback||'').replace(/'/g,"\\'")}')" class="w-full bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-green-100 transition-colors">⭐ ${data.score}/10<br><span class="font-normal text-[10px]">แก้ไขคะแนน</span></button>`
+                    : `<button onclick="gradeWork('${data.id}', '${data.studentName}', '', '')" class="w-full bg-amber-400 text-white px-3 py-2 rounded-xl text-xs font-black shadow-sm hover:bg-amber-500 transition-colors animate-pulse">ตรวจงาน</button>`;
+
+                let mediaBadge = '<span class="text-slate-300 text-xs">-</span>';
+                if (data.mediaType) {
+                    const cls = MEDIA_BADGE[data.mediaType] || 'bg-slate-100 text-slate-500 border-slate-200';
+                    mediaBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls} whitespace-nowrap">${MEDIA_ICON[data.mediaType]||'✨'} ${data.mediaType}</span>`;
+                }
+                let skillChips = (data.skills||[]).map(s => `<span class="inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded-full ${SKILL_CHIP[s]||'bg-slate-100 text-slate-500'}">${s}</span>`).join('');
+
+                const isChecked = selectedIds.has(data.id);
+                const rowBg = isChecked ? 'bg-indigo-50' : '';
+                const safeStudentName = (data.studentName||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors ${rowBg}">
+                        <td class="p-4 align-top">
+                            <input type="checkbox" data-id="${data.id}" class="row-checkbox w-4 h-4 rounded accent-indigo-600 cursor-pointer" ${isChecked ? 'checked' : ''}>
+                        </td>
+                        <td class="p-4 align-top"><div class="font-bold text-slate-700">${dStr}</div><div class="text-xs text-slate-400">${tStr}</div></td>
+                        <td class="p-4 align-top">
+                            <div class="font-bold text-indigo-700">${data.studentName}</div>
+                            <button onclick="viewStudentProfile('${safeStudentName}')" class="text-[10px] text-indigo-400 hover:text-indigo-600 font-bold mt-0.5 flex items-center gap-0.5">
+                                <i class="ph-bold ph-chart-bar"></i> ดูสถิติ
+                            </button>
+                        </td>
+                        <td class="p-4 align-top max-w-[200px]">
+                            <p class="font-bold text-slate-800 text-sm truncate mb-1">${data.topic}</p>
+                            <p class="text-xs text-slate-500 line-clamp-2">${data.summary}</p>
+                        </td>
+                        <td class="p-4 align-top">
+                            <div class="flex flex-col gap-1 items-start">
+                                ${mediaBadge}
+                                <div class="flex flex-wrap gap-1 mt-1">${skillChips}</div>
+                            </div>
+                        </td>
+                        <td class="p-4 align-top text-center">${imgBtn}</td>
+                        <td class="p-4 align-top text-center">${gradeBtn}</td>
+                        <td class="p-4 align-top text-right">
+                            <button onclick="deleteLog('${data.id}')" class="text-slate-300 hover:text-red-500 p-2 transition-colors" title="ลบ"><i class="ph-bold ph-trash text-lg"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const row = cb.closest('tr');
+                    if (e.target.checked) { selectedIds.add(cb.dataset.id); row.classList.add('bg-indigo-50'); row.classList.remove('hover:bg-slate-50'); }
+                    else { selectedIds.delete(cb.dataset.id); row.classList.remove('bg-indigo-50'); }
+                    updateBulkBar();
+                });
+            });
+            updateBulkBar();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', renderTable);
+        document.getElementById('filterMedia').addEventListener('change', renderTable);
+        document.getElementById('filterSkill').addEventListener('change', renderTable);
+        document.getElementById('filterStatus').addEventListener('change', renderTable);
+        document.getElementById('clearFilters').addEventListener('click', () => {
+            document.getElementById('filterMedia').value = '';
+            document.getElementById('filterSkill').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('searchInput').value = '';
+            renderTable();
+        });
+
+        // QoL: Individual Grade Modal with Quick Buttons
+        window.gradeWork = function(docId, name, oldScore, oldFeedback) {
+            Swal.fire({
+                title: `ตรวจงาน: ${name}`,
+                html: `
+                    <div class="text-left space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">เลือกคะแนนด่วน</label>
+                            <div class="flex gap-1.5 mb-2">
+                                <button type="button" onclick="document.getElementById('swal-score').value=10" class="flex-1 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 border border-green-200">10</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=9" class="flex-1 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 border border-green-200">9</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=8" class="flex-1 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 border border-blue-200">8</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=7" class="flex-1 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 border border-amber-200">7</button>
+                                <button type="button" onclick="document.getElementById('swal-score').value=5" class="flex-1 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-bold hover:bg-red-100 border border-red-200">5</button>
+                            </div>
+                            <input id="swal-score" type="number" min="0" max="10" class="w-full border-2 border-slate-200 rounded-xl p-2.5 focus:border-indigo-500 text-xl font-bold text-center" value="${oldScore || '10'}">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">คำชมเชยด่วน (Quick Feedback)</label>
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <button type="button" onclick="document.getElementById('swal-feedback').value='ยอดเยี่ยมมาก! สรุปได้เข้าใจง่าย 🌟'" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-bold">🌟 ยอดเยี่ยม</button>
+                                <button type="button" onclick="document.getElementById('swal-feedback').value='เนื้อหาดีมาก ฝึกพูดเพิ่มอีกนิดนะ 👏'" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-bold">👏 ฝึกพูดเพิ่ม</button>
+                                <button type="button" onclick="document.getElementById('swal-feedback').value='บันทึกคำศัพท์ได้น่าสนใจมาก 📝'" class="text-[10px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-bold">📝 ศัพท์น่าสนใจ</button>
+                            </div>
+                            <textarea id="swal-feedback" rows="3" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-xs focus:border-indigo-500" placeholder="พิมพ์คำชมเชย หรือคลิกเลือกด้านบน">${oldFeedback || ''}</textarea>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true, confirmButtonText: 'บันทึกผลคะแนน', confirmButtonColor: '#4f46e5', cancelButtonText: 'ยกเลิก',
+                preConfirm: () => ({ score: document.getElementById('swal-score').value, feedback: document.getElementById('swal-feedback').value })
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await updateDoc(doc(db, "learning_logs", docId), { score: result.value.score, teacherFeedback: result.value.feedback });
+                        Swal.fire({icon: 'success', title: 'บันทึกคะแนนแล้ว!', timer: 1200, showConfirmButton: false});
+                    } catch (e) { Swal.fire('Error', e.message, 'error'); }
+                }
+            });
+        };
+
+        window.deleteLog = function(docId) {
+            Swal.fire({title: 'ลบข้อมูล?', text: "ไม่สามารถกู้คืนได้!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก'}).then(async (r) => {
+                if (r.isConfirmed) await deleteDoc(doc(db, "learning_logs", docId));
+            });
+        };
+
+        // Export CSV with UTF-8 BOM
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            let csv = "\uFEFFวันที่,นักเรียน,หัวข้อ,สรุป,สื่อ,ทักษะ,คะแนน,ข้อเสนอแนะครู\n";
+            allLogs.forEach(l => {
+                const dt = l.timestamp ? l.timestamp.toDate().toLocaleString('th-TH') : '';
+                const skills = (l.skills || []).join(', ');
+                csv += `"${dt}","${l.studentName}","${l.topic}","${(l.summary||'').replace(/"/g,'""')}","${l.mediaType||''}","${skills}","${l.score||''}","${(l.teacherFeedback||'').replace(/"/g,'""')}"\n`;
+            });
+            const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `EnglishTracker_Export_${new Date().toLocaleDateString('th-TH')}.csv`; link.click();
+        });
+
+        const modal = document.getElementById('imageModal');
+        window.openModal = (src) => { document.getElementById('modalImage').src = src; modal.classList.remove('hidden'); setTimeout(()=>modal.classList.remove('opacity-0'),10); };
+        document.getElementById('closeModalBtn').addEventListener('click', () => { modal.classList.add('opacity-0'); setTimeout(()=>modal.classList.add('hidden'), 200); });
+
+        // Student Progress Modal
+        window.viewStudentProfile = function(name) {
+            const studentLogs = allLogs.filter(l => l.studentName === name);
+            if (studentLogs.length === 0) return;
+
+            const total = studentLogs.length;
+            const graded = studentLogs.filter(l => l.score).length;
+            const avgScore = graded > 0 ? (studentLogs.filter(l=>l.score).reduce((s,l) => s + parseFloat(l.score||0), 0) / graded).toFixed(1) : '-';
+
+            const mediaCounts = {};
+            studentLogs.forEach(l => { const m = l.mediaType||'Other'; mediaCounts[m] = (mediaCounts[m]||0)+1; });
+            const mediaHtml = Object.entries(mediaCounts).map(([m,c]) => {
+                const icons = {YouTube:'🎬',Podcast:'🎧',Article:'📖',Game:'🎮',Other:'✨'};
+                return `<span class="inline-flex items-center gap-1 text-xs bg-slate-100 px-2 py-1 rounded-lg font-bold">${icons[m]||'✨'} ${m}: ${c}</span>`;
+            }).join('');
+
+            const skillCounts = {Listening:0,Reading:0,Vocabulary:0,Grammar:0,Speaking:0,Writing:0};
+            studentLogs.forEach(l => (l.skills||[]).forEach(s => { if(skillCounts[s]!==undefined) skillCounts[s]++; }));
+            const skillEmoji = {Listening:'🎧',Reading:'📖',Vocabulary:'📝',Grammar:'📐',Speaking:'🗣️',Writing:'✍️'};
+            const skillHtml = Object.entries(skillCounts).map(([s,c]) => {
+                const pct = total > 0 ? Math.round((c/total)*100) : 0;
+                return `
+                  <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-xs w-24 font-bold text-slate-600">${skillEmoji[s]} ${s}</span>
+                    <div class="flex-1 bg-slate-100 rounded-full h-2">
+                      <div class="bg-emerald-400 h-2 rounded-full" style="width:${pct}%"></div>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500 w-8 text-right">${c}</span>
+                  </div>
+                `;
+            }).join('');
+
+            const recentTopics = studentLogs.slice(0,3).map(l => `<li class="text-xs text-slate-500">• ${l.topic}</li>`).join('');
+            const avatar = studentLogs[0]?.userPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+
+            Swal.fire({
+                width: 480,
+                title: '',
+                html: `
+                  <div class="text-left">
+                    <div class="flex items-center gap-3 mb-4">
+                      <img src="${avatar}" class="w-14 h-14 rounded-full border-2 border-emerald-200">
+                      <div>
+                        <h3 class="text-lg font-black text-slate-800">${name}</h3>
+                        <p class="text-xs text-slate-400">${studentLogs[0]?.email||''}</p>
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                      <div class="bg-indigo-50 rounded-2xl p-3 text-center">
+                        <p class="text-2xl font-black text-indigo-600">${total}</p>
+                        <p class="text-[10px] font-bold text-slate-500">งานที่ส่ง</p>
+                      </div>
+                      <div class="bg-amber-50 rounded-2xl p-3 text-center">
+                        <p class="text-2xl font-black text-amber-600">${graded}</p>
+                        <p class="text-[10px] font-bold text-slate-500">ตรวจแล้ว</p>
+                      </div>
+                      <div class="bg-emerald-50 rounded-2xl p-3 text-center">
+                        <p class="text-2xl font-black text-emerald-600">${avgScore}</p>
+                        <p class="text-[10px] font-bold text-slate-500">คะแนนเฉลี่ย</p>
+                      </div>
+                    </div>
+                    <p class="text-xs font-black text-slate-700 mb-2">สื่อที่ใช้</p>
+                    <div class="flex flex-wrap gap-1.5 mb-4">${mediaHtml}</div>
+                    <p class="text-xs font-black text-slate-700 mb-2">ทักษะที่ฝึก</p>
+                    <div class="mb-4">${skillHtml}</div>
+                    <p class="text-xs font-black text-slate-700 mb-1">งานล่าสุด</p>
+                    <ul class="bg-slate-50 rounded-xl p-3">${recentTopics}</ul>
+                  </div>
+                `,
+                showConfirmButton: false,
+                showCloseButton: true,
+                customClass: { popup: 'rounded-3xl' }
+            });
+        };
+
+        // Resource Board
+        const RESOURCE_MEDIA_ICONS = {YouTube:'🎬',Podcast:'🎧',Article:'📖',Game:'🎮',Other:'✨'};
+        const RESOURCE_MEDIA_BADGE_CLS = {
+            YouTube:'bg-red-50 text-red-600 border-red-200',
+            Podcast:'bg-purple-50 text-purple-600 border-purple-200',
+            Article:'bg-blue-50 text-blue-600 border-blue-200',
+            Game:'bg-green-50 text-green-600 border-green-200',
+            Other:'bg-slate-100 text-slate-500 border-slate-200'
+        };
+
+        async function loadResourcesAdmin() {
+            const listEl = document.getElementById('resourceAdminList');
+            listEl.innerHTML = '<div class="text-slate-400 text-sm">กำลังโหลด...</div>';
+            try {
+                const snap = await getDocs(query(collection(db, 'resources'), orderBy('timestamp', 'desc')));
+                if (snap.empty) {
+                    listEl.innerHTML = '<div class="text-slate-400 text-sm col-span-full">ยังไม่มีสื่อแนะนำ</div>';
+                    return;
+                }
+                listEl.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const r = docSnap.data();
+                    const badgeCls = RESOURCE_MEDIA_BADGE_CLS[r.mediaType] || RESOURCE_MEDIA_BADGE_CLS.Other;
+                    const icon = RESOURCE_MEDIA_ICONS[r.mediaType] || '✨';
+                    const hostname = (() => { try { return new URL(r.url).hostname; } catch(e) { return r.url; } })();
+                    listEl.innerHTML += `
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-2">
+                            <div class="flex items-start justify-between gap-2">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeCls}">${icon} ${r.mediaType||'Other'}</span>
+                                <button onclick="deleteResource('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition-colors shrink-0" title="ลบ"><i class="ph-bold ph-trash"></i></button>
+                            </div>
+                            <p class="font-black text-slate-800 text-sm leading-snug">${r.title}</p>
+                            <a href="${r.url}" target="_blank" class="text-[10px] text-indigo-500 hover:underline truncate">${hostname}</a>
+                            ${r.description ? `<p class="text-xs text-slate-500 line-clamp-2">${r.description}</p>` : ''}
+                            <p class="text-[10px] text-slate-400 mt-auto">โดย ${r.addedBy||'Admin'}</p>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                listEl.innerHTML = `<div class="text-red-400 text-sm">${e.message}</div>`;
+            }
+        }
+
+        window.deleteResource = function(docId) {
+            Swal.fire({title:'ลบสื่อนี้?', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก'})
+            .then(async r => { if(r.isConfirmed) { await deleteDoc(doc(db,'resources',docId)); loadResourcesAdmin(); } });
+        };
+
+        document.getElementById('addResourceBtn').addEventListener('click', () => {
+            Swal.fire({
+                title: '➕ เพิ่มสื่อแนะนำ',
+                html: `
+                  <div class="text-left space-y-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อสื่อ *</label>
+                      <input id="res-title" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-indigo-500" placeholder="เช่น TED Talk: The Power of Listening">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">URL *</label>
+                      <input id="res-url" type="url" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-indigo-500" placeholder="https://...">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">ประเภทสื่อ</label>
+                      <select id="res-media" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-indigo-500">
+                        <option value="YouTube">🎬 YouTube</option>
+                        <option value="Podcast">🎧 Podcast</option>
+                        <option value="Article">📖 บทความ</option>
+                        <option value="Game">🎮 เกม</option>
+                        <option value="Other">✨ อื่นๆ</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">คำอธิบาย</label>
+                      <textarea id="res-desc" rows="2" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-indigo-500" placeholder="อธิบายสั้นๆ ว่าเหมาะกับทักษะอะไร"></textarea>
+                    </div>
+                  </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '✅ บันทึก',
+                confirmButtonColor: '#4f46e5',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const title = document.getElementById('res-title').value.trim();
+                    const url = document.getElementById('res-url').value.trim();
+                    if (!title || !url) { Swal.showValidationMessage('กรุณากรอกชื่อสื่อและ URL'); return false; }
+                    return { title, url, mediaType: document.getElementById('res-media').value, description: document.getElementById('res-desc').value.trim() };
+                }
+            }).then(async result => {
+                if (!result.isConfirmed) return;
+                try {
+                    await addDoc(collection(db, 'resources'), {
+                        ...result.value,
+                        addedBy: auth.currentUser?.email || 'Teacher',
+                        timestamp: serverTimestamp()
+                    });
+                    loadResourcesAdmin();
+                    Swal.fire({ icon: 'success', title: 'เพิ่มสื่อแล้ว! 🎉', timer: 1500, showConfirmButton: false });
+                } catch(e) { Swal.fire('Error', e.message, 'error'); }
+            });
+        });
+    </script>
+</body>
+</html>

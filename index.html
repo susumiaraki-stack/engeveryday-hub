@@ -1,13 +1,1396 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>prototype-a</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My English Log - English Tracker</title>
+    
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="apple-touch-icon" href="https://api.dicebear.com/7.x/bottts/png?seed=English&size=192">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #ecfdf5; }
+        .bg-pattern { background-image: radial-gradient(#10b981 1.5px, transparent 1.5px); background-size: 24px 24px; opacity: 0.05; position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+        .pulse-fire { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Shop Effects */
+        .frame-neon { outline: 4px solid #4ade80; outline-offset: 2px; box-shadow: 0 0 15px rgba(74,222,128,0.8); }
+        .frame-fire { outline: 4px solid #f97316; outline-offset: 2px; box-shadow: 0 0 15px rgba(249,115,22,0.8); animation: pulse-fire 2s infinite alternate; }
+        .frame-gold { outline: 4px solid #facc15; outline-offset: 2px; box-shadow: 0 0 20px rgba(250,204,21,1); border: 2px solid #fff; }
+        @keyframes pulse-fire { 0% { box-shadow: 0 0 10px #f97316; } 100% { box-shadow: 0 0 25px #ef4444; } }
+        
+        .name-rainbow { background: linear-gradient(to right, #ef4444, #f59e0b, #3b82f6, #8b5cf6); -webkit-background-clip: text; color: transparent; animation: hue 3s infinite linear; font-weight: 900; }
+        .name-sparkle { color: #d946ef; text-shadow: 0 0 8px rgba(217,70,239,0.8); }
+        .frame-ocean { outline: 4px solid #0ea5e9; outline-offset: 2px; box-shadow: 0 0 20px rgba(14,165,233,0.8); animation: pulse-ocean 3s infinite alternate; }
+        .frame-purple { outline: 4px solid #a855f7; outline-offset: 2px; box-shadow: 0 0 15px rgba(168,85,247,0.8); }
+        .frame-cyber { outline: 4px solid #ec4899; border: 2px solid #06b6d4; outline-offset: 2px; box-shadow: 0 0 15px #ec4899, inset 0 0 10px #06b6d4; }
+        .name-gold { background: linear-gradient(to right, #fbbf24, #d97706, #fbbf24); -webkit-background-clip: text; color: transparent; background-size: 200% auto; animation: shine-gold 2s infinite linear; font-weight: 900; }
+        .name-hacker { color: #22c55e; text-shadow: 0 0 5px #22c55e; font-family: monospace; }
+        .name-fire { background: linear-gradient(to top, #ef4444, #f97316); -webkit-background-clip: text; color: transparent; font-weight: 900; }
+        
+        @keyframes shine-gold { to { background-position: 200% center; } }
+        @keyframes pulse-ocean { 0% { box-shadow: 0 0 10px #0ea5e9; } 100% { box-shadow: 0 0 30px #38bdf8; } }
+        @keyframes hue { to { filter: hue-rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 flex flex-col items-center">
+    <div class="bg-pattern"></div>
+
+    <!-- Top Floating Buttons (Admin & Lang) -->
+    <div class="fixed top-4 right-4 z-50 flex gap-2">
+        <button id="langToggleBtn" onclick="toggleLang()" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform font-black text-xs border-2 border-slate-700">
+            EN
+        </button>
+        <a href="admin.html" class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-2 border-indigo-500" title="เข้าสู่ระบบ Admin ครู">
+            <i class="ph-bold ph-shield-star text-lg"></i>
+        </a>
+    </div>
+
+    <!-- In-App Browser Warning (QoL) -->
+    <div id="lineBrowserWarning" class="hidden max-w-md w-full bg-amber-500 text-white p-3 rounded-2xl shadow-md text-xs font-bold mb-4 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+            <i class="ph-bold ph-info text-lg"></i>
+            <span>เปิดในแอป LINE? แนะนำกดจุด 3 จุดมุมขวาแล้วเลือก "เปิดในเบราว์เซอร์" เพื่อความเสถียร</span>
+        </div>
+        <button onclick="document.getElementById('lineBrowserWarning').remove()" class="text-white hover:text-amber-200">✕</button>
+    </div>
+
+    <!-- i18n Script -->
+    <script>
+        const i18nDict = {
+            "กำลังตรวจสอบระบบ...": "Checking system...",
+            "English Tracker": "English Tracker",
+            "เข้าสู่ระบบเพื่อบันทึกการเรียนรู้ของคุณ": "Login to record your learning",
+            "เข้าสู่ระบบด้วย Google": "Login with Google",
+            "นักเรียน": "STUDENT",
+            "📝 ส่งงาน": "📝 Submit",
+            "🏆 กระดานผู้นำ": "🏆 Leaderboard",
+            "📊 ทักษะฉัน": "📊 My Skills",
+            "🛒 ร้านค้า": "🛒 Shop",
+            "ชื่อ-นามสกุล / ชื่อเล่น": "Full Name / Nickname",
+            "หัวข้อที่เรียน / ลิงก์": "Topic / Link",
+            "เซฟร่างแล้ว": "Draft saved",
+            "สื่อที่ใช้เรียน": "Media Used",
+            "บทความ": "Article",
+            "เกม": "Game",
+            "อื่นๆ": "Other",
+            "ทักษะที่ฝึก": "Skills Practiced",
+            "(เลือกได้หลายอย่าง)": "(Select multiple)",
+            "ผลงาน (Screenshot)": "Screenshot (Optional)",
+            "แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป": "Tap to select image or Ctrl+V to paste",
+            "สรุปสิ่งที่ได้เรียนรู้": "What did you learn?",
+            "ส่งงานรับ 10 💰": "Submit & Get 10 💰",
+            "ส่งงาน": "Submit",
+            "รางวัลของฉัน": "My Badges",
+            "ยังไม่มีข้อมูล...": "No data...",
+            "ประวัติของฉัน": "My History",
+            "กำลังโหลด...": "Loading...",
+            "กระดานคนเก่ง": "Leaderboard",
+            "จัดอันดับตามจำนวนครั้งที่ส่งงาน": "Ranked by submissions",
+            "แหล่งเรียนรู้แนะนำจากครู": "Recommended Resources",
+            "ทักษะที่ฝึกของฉัน": "My Practiced Skills",
+            "นับจากจำนวนครั้งที่เลือกแต่ละทักษะ": "Counted from selected skills",
+            "ร้านค้า (Shop)": "Shop",
+            "ใช้ 💰 เหรียญจากการส่งงานมาแลกของตกแต่ง!": "Use 💰 coins to buy decorations!",
+            "กรอบโปรไฟล์ (Frames)": "Profile Frames",
+            "เอฟเฟกต์ชื่อ (Name Effects)": "Name Effects",
+            "ถอดออก": "Unequip",
+            "สวมใส่": "Equip",
+            "ยังไม่มีประวัติ เริ่มเลย!": "No history yet, let's start!",
+            "คุณครูตรวจแล้ว": "Graded",
+            "มือใหม่": "Novice",
+            "Streak 3 วัน": "3-Day Streak",
+            "Streak 7 วัน": "7-Day Streak",
+            "นักอ่าน": "Reader",
+            "10 งาน": "10 Works",
+            "ครบทุกทักษะ": "All Skills",
+            "งาน": "Works",
+            "ครูยังไม่ได้เพิ่มสื่อแนะนำ": "No resources added by teacher yet."
+        };
+
+        const i18nPlaceholders = {
+            "เช่น ด.ช.สมชาย": "e.g. John Doe",
+            "เช่น Past Tense หรือ ลิงก์ YouTube": "e.g. Past Tense or YouTube Link",
+            "เรียนอะไรบ้าง... (กดรูปไมค์เพื่อพูดได้)": "What did you learn... (Tap mic to speak)"
+        };
+
+        window.currentLang = localStorage.getItem('appLang') || 'th';
+        
+        window.toggleLang = function() {
+            window.currentLang = window.currentLang === 'th' ? 'en' : 'th';
+            localStorage.setItem('appLang', window.currentLang);
+            applyLanguage();
+        };
+
+        let observer = null;
+        window.applyLanguage = function() {
+            if(observer) observer.disconnect();
+            
+            const btn = document.getElementById('langToggleBtn');
+            const newBtnText = window.currentLang === 'th' ? 'EN' : 'TH';
+            if(btn && btn.textContent.trim() !== newBtnText) {
+                btn.textContent = newBtnText;
+            }
+            
+            const isEn = window.currentLang === 'en';
+            
+            const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            while(node = walk.nextNode()) {
+                if (node.parentElement && (node.parentElement.tagName === 'SCRIPT' || node.parentElement.tagName === 'STYLE')) continue;
+                if (!node.originalText) node.originalText = node.nodeValue;
+                let text = node.originalText;
+                let trimmed = text.trim();
+                
+                if(trimmed.startsWith("คะแนน:")) { node.nodeValue = text.replace("คะแนน:", isEn ? "Score:" : "คะแนน:"); continue; }
+                if(trimmed.startsWith("ล่าสุด:")) { node.nodeValue = text.replace("ล่าสุด:", isEn ? "Latest:" : "ล่าสุด:"); continue; }
+
+                if (trimmed && i18nDict[trimmed]) {
+                    node.nodeValue = text.replace(trimmed, isEn ? i18nDict[trimmed] : trimmed);
+                }
+            }
+
+            document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+                if(!el.originalPlaceholder) el.originalPlaceholder = el.getAttribute('placeholder');
+                let text = el.originalPlaceholder;
+                if(i18nPlaceholders[text]) {
+                    el.setAttribute('placeholder', isEn ? i18nPlaceholders[text] : text);
+                }
+            });
+            
+            if(observer) observer.observe(document.body, { childList: true, subtree: true });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (navigator.userAgent.includes('Line')) {
+                const el = document.getElementById('lineBrowserWarning');
+                if (el) el.classList.remove('hidden');
+            }
+            observer = new MutationObserver(() => applyLanguage());
+            applyLanguage();
+        });
+    </script>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity">
+        <i class="ph-bold ph-spinner-gap animate-spin text-4xl text-emerald-500 mb-4"></i>
+        <p class="text-slate-500 font-bold">กำลังตรวจสอบระบบ...</p>
+    </div>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="w-full max-w-md bg-white rounded-[2rem] shadow-xl p-8 text-center hidden mb-6 mt-10">
+        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="ph-bold ph-student text-4xl text-emerald-600"></i>
+        </div>
+        <h1 class="text-2xl font-black text-slate-800 mb-2">English Tracker</h1>
+        <p class="text-slate-500 mb-6 text-sm">เข้าสู่ระบบเพื่อบันทึกการเรียนรู้ของคุณ</p>
+        
+        <div class="space-y-3">
+            <button id="loginBtn" class="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-base font-bold text-slate-700 bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all active:scale-[0.98] shadow-sm">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                เข้าสู่ระบบด้วย Google
+            </button>
+
+            <!-- QoL: Guest / Fast Login for Students without Google -->
+            <button id="guestLoginBtn" class="w-full flex justify-center items-center gap-2 py-3 px-6 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all active:scale-[0.98]">
+                <i class="ph-bold ph-user-circle text-lg"></i>
+                เข้าใช้งานแบบ Guest (ไม่ต้องใช้อีเมล)
+            </button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-4 leading-relaxed">
+            *ใช้บัญชี Google เพื่อสะสมเหรียญ 💰 ซื้อของในร้านค้าและบันทึกประวัติถาวร
+        </p>
+    </div>
+
+    <!-- Main App Section -->
+    <div id="appSection" class="w-full max-w-md hidden">
+        
+        <!-- Header Profile Banner Card -->
+        <div class="w-full bg-white rounded-[2rem] shadow-sm border border-slate-100 mb-6 overflow-hidden relative group">
+            <!-- Cover Photo / Pattern -->
+            <div class="h-24 sm:h-32 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 16px 16px;"></div>
+                <div class="absolute -bottom-8 -right-8 text-white/20 text-8xl transform -rotate-12">
+                    <i class="ph-fill ph-student"></i>
+                </div>
+                <div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-black border border-white/30 shadow-sm">
+                    English Tracker ✨
+                </div>
+            </div>
+            
+            <!-- Profile Info section -->
+            <div class="px-5 pb-5 relative flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-end -mt-10 sm:-mt-12">
+                <!-- Avatar -->
+                <div class="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
+                    <img id="userPhoto" src="" class="w-full h-full rounded-full object-cover bg-white z-10 relative border-4 border-white shadow-md">
+                </div>
+                
+                <!-- Name & Role -->
+                <div class="flex-1 text-center sm:text-left pt-1 sm:pt-14 min-w-0">
+                    <p id="userEmail" class="text-lg sm:text-xl font-black text-slate-800 truncate transition-all"></p>
+                    <p id="userRole" class="text-[10px] text-emerald-600 font-bold tracking-wider uppercase mt-0.5">นักเรียน / Student</p>
+                </div>
+                
+                <!-- Stats & Actions -->
+                <div class="flex items-center justify-center sm:justify-end gap-1.5 pt-2 sm:pt-0 pb-1">
+                    <div class="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-black flex items-center gap-1.5 shadow-sm border border-amber-100" title="เหรียญของคุณ">
+                        <span class="text-sm">💰</span><span id="coinCount" class="text-sm">0</span>
+                    </div>
+                    <div class="bg-orange-50 text-orange-500 px-3 py-1.5 rounded-xl font-black flex items-center gap-1.5 shadow-sm border border-orange-100" title="วันส่งงานต่อเนื่อง">
+                        <span class="text-sm pulse-fire">🔥</span><span id="streakCount" class="text-sm">0</span>
+                    </div>
+                    <button id="logoutBtn" class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-xl transition-colors shadow-sm border border-slate-100 ml-1" title="ออกจากระบบ">
+                        <i class="ph-bold ph-sign-out text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex gap-2 mb-4 bg-emerald-100/50 p-1 rounded-2xl">
+            <button id="tabForm" class="flex-1 py-2 text-sm font-bold bg-white text-emerald-600 rounded-xl shadow-sm transition-all">📝 ส่งงาน</button>
+            <button id="tabLeaderboard" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all">🏆 กระดานผู้นำ</button>
+            <button id="tabSkills" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all">📊 ทักษะฉัน</button>
+            <button id="tabShop" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all">🛒 ร้านค้า</button>
+        </div>
+
+        <!-- TAB: Form & History -->
+        <div id="viewForm">
+            <form id="learningForm" class="bg-white rounded-3xl p-6 shadow-xl border border-emerald-50 mb-6">
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-bold text-slate-700">ชื่อ-นามสกุล / ชื่อเล่น <span class="text-red-500">*</span></label>
+                        <span id="guestBadge" class="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md font-bold hidden">โหมด Guest</span>
+                    </div>
+                    <input type="text" id="studentName" placeholder="เช่น ด.ช.สมชาย (ม.2/1 เลขที่ 5)" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm transition-colors">
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-bold text-slate-700">หัวข้อที่เรียน / ลิงก์ <span class="text-red-500">*</span></label>
+                        <span id="draftIndicator1" class="text-[10px] text-emerald-500 font-bold hidden">✓ เซฟร่างแล้ว</span>
+                    </div>
+                    <input type="text" id="topic" placeholder="เช่น Past Tense หรือ ลิงก์ YouTube" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm transition-colors">
+                </div>
+
+                <!-- Media Type Selector -->
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">สื่อที่ใช้เรียน <span class="text-red-500">*</span></label>
+                    <div id="mediaTypeGroup" class="grid grid-cols-5 gap-1.5">
+                        <button type="button" data-media="YouTube" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-red-400 hover:bg-red-50 transition-all text-center">
+                            <span class="text-xl">🎬</span>
+                            <span class="text-[10px] font-bold text-slate-600">YouTube</span>
+                        </button>
+                        <button type="button" data-media="Podcast" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-purple-400 hover:bg-purple-50 transition-all text-center">
+                            <span class="text-xl">🎧</span>
+                            <span class="text-[10px] font-bold text-slate-600">Podcast</span>
+                        </button>
+                        <button type="button" data-media="Article" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all text-center">
+                            <span class="text-xl">📖</span>
+                            <span class="text-[10px] font-bold text-slate-600">บทความ</span>
+                        </button>
+                        <button type="button" data-media="Game" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-green-400 hover:bg-green-50 transition-all text-center">
+                            <span class="text-xl">🎮</span>
+                            <span class="text-[10px] font-bold text-slate-600">เกม</span>
+                        </button>
+                        <button type="button" data-media="Other" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100 transition-all text-center">
+                            <span class="text-xl">✨</span>
+                            <span class="text-[10px] font-bold text-slate-600">อื่นๆ</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="selectedMedia" required>
+                </div>
+
+                <!-- Skill Tags -->
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">ทักษะที่ฝึก <span class="text-slate-400 font-normal text-xs">(เลือกได้หลายอย่าง)</span></label>
+                    <div id="skillTagGroup" class="flex flex-wrap gap-2">
+                        <button type="button" data-skill="Listening" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 transition-all">
+                            🎧 Listening
+                        </button>
+                        <button type="button" data-skill="Reading" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all">
+                            📖 Reading
+                        </button>
+                        <button type="button" data-skill="Vocabulary" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700 transition-all">
+                            📝 Vocabulary
+                        </button>
+                        <button type="button" data-skill="Grammar" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 transition-all">
+                            📐 Grammar
+                        </button>
+                        <button type="button" data-skill="Speaking" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 transition-all">
+                            🗣️ Speaking
+                        </button>
+                        <button type="button" data-skill="Writing" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 transition-all">
+                            ✍️ Writing
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Screenshot with Paste Support (QoL) -->
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">ผลงาน (Screenshot)</label>
+                    <div id="uploadArea" class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('imageFile').click()">
+                        <input type="file" id="imageFile" accept="image/*" class="hidden">
+                        <div id="uploadPlaceholder">
+                            <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
+                            <p id="fileNameDisplay" class="text-xs font-bold text-slate-500">แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป</p>
+                        </div>
+                        <div id="previewContainer" class="hidden relative">
+                            <img id="imagePreview" src="" class="max-h-36 mx-auto rounded-lg shadow-sm">
+                            <button type="button" id="removeImageBtn" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors">
+                                <i class="ph-bold ph-x text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary with Voice Typing Support (QoL) -->
+                <div class="mb-5">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-bold text-slate-700">สรุปสิ่งที่ได้เรียนรู้ <span class="text-red-500">*</span></label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="voiceTypeBtn" class="text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold flex items-center gap-1" title="กดเพื่อพูดบันทึกสรุป">
+                                <i class="ph-bold ph-microphone"></i> พูดสรุป
+                            </button>
+                            <span id="draftIndicator2" class="text-[10px] text-emerald-500 font-bold hidden">✓ เซฟร่างแล้ว</span>
+                        </div>
+                    </div>
+                    <textarea id="summary" rows="3" placeholder="เรียนอะไรบ้าง... (กดรูปไมค์เพื่อพูดได้)" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm resize-none transition-colors"></textarea>
+                    <div class="flex justify-between items-center mt-1 text-[11px] text-slate-400 px-1">
+                        <span id="wordCountText">0 คำ</span>
+                        <span>Ctrl+V วางภาพหน้าจอได้เลย</span>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(16,185,129,0.4)] active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                    ส่งงานรับ 10 💰 <i class="ph-bold ph-paper-plane-right text-lg"></i>
+                </button>
+            </form>
+
+            <!-- Badge Section -->
+            <div id="badgeSection" class="bg-white rounded-3xl p-5 shadow-sm border border-emerald-50 mb-4">
+                <h3 class="font-black text-slate-800 mb-3 flex items-center gap-2">🏅 รางวัลของฉัน</h3>
+                <div id="badgeList" class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                    <div class="text-center text-slate-400 py-2 text-sm">ยังไม่มีข้อมูล...</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-emerald-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-slate-800 flex items-center gap-2"><i class="ph-bold ph-clock-counter-clockwise"></i> ประวัติของฉัน</h3>
+                    <span id="historyCount" class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg">0</span>
+                </div>
+                <div id="historyList" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                    <div class="text-center text-slate-400 py-6 text-sm">กำลังโหลด...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Leaderboard -->
+        <div id="viewLeaderboard" class="hidden">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 shadow-xl text-white mb-6 text-center relative overflow-hidden">
+                <i class="ph-fill ph-trophy absolute -right-4 -bottom-4 text-9xl text-white opacity-10"></i>
+                <h2 class="text-2xl font-black mb-1 relative z-10">กระดานคนเก่ง</h2>
+                <p class="text-indigo-100 text-sm relative z-10">จัดอันดับตามจำนวนครั้งที่ส่งงาน</p>
+            </div>
+            
+            <div class="bg-white rounded-3xl p-2 shadow-sm border border-slate-100">
+                <div id="leaderboardList" class="space-y-1">
+                    <div class="p-6 text-center text-slate-400"><i class="ph-bold ph-spinner-gap animate-spin text-2xl"></i></div>
+                </div>
+            </div>
+
+            <!-- Resource Board -->
+            <div class="mt-4 bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+                <h3 class="font-black text-slate-800 flex items-center gap-2 mb-3"><i class="ph-bold ph-bookmark-simple"></i> แหล่งเรียนรู้แนะนำจากครู</h3>
+                <div id="resourceList" class="space-y-2">
+                    <div class="text-center text-slate-400 py-4 text-sm">กำลังโหลด...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Skills Radar -->
+        <div id="viewSkills" class="hidden">
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-emerald-50 mb-4">
+                <h3 class="font-black text-slate-800 mb-4 flex items-center gap-2"><i class="ph-bold ph-chart-polar"></i> ทักษะที่ฝึกของฉัน</h3>
+                <p class="text-xs text-slate-400 mb-4">นับจากจำนวนครั้งที่เลือกแต่ละทักษะ</p>
+                <canvas id="skillRadarChart" class="max-h-[300px]"></canvas>
+            </div>
+            <div id="skillBreakdownCards" class="grid grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- TAB: Shop -->
+        <div id="viewShop" class="hidden">
+            <div class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl p-6 shadow-xl text-white mb-6 text-center relative overflow-hidden">
+                <i class="ph-fill ph-storefront absolute -right-4 -bottom-4 text-9xl text-white opacity-20"></i>
+                <h2 class="text-2xl font-black mb-1 relative z-10">ร้านค้า (Shop)</h2>
+                <p class="text-amber-100 text-sm relative z-10">ใช้ 💰 เหรียญจากการส่งงานมาแลกของตกแต่ง!</p>
+            </div>
+            
+            <h3 class="font-black text-slate-800 mb-3 ml-2 flex items-center gap-2"><i class="ph-bold ph-frame-corners"></i> กรอบโปรไฟล์ (Frames)</h3>
+            <div class="grid grid-cols-2 gap-3 mb-6" id="shopFrames"></div>
+
+            <h3 class="font-black text-slate-800 mb-3 ml-2 flex items-center gap-2"><i class="ph-bold ph-text-aa"></i> เอฟเฟกต์ชื่อ (Name Effects)</h3>
+            <div class="grid grid-cols-2 gap-3" id="shopNameEffects"></div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, getDocs, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Reg failed:', err));
+            });
+        }
+
+        // FIREBASE CONFIG - Database englishhub
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvuhYgTjbHatXOvVLjGcGrAEuqHINTmd0",
+            authDomain: "engtiktokapp.firebaseapp.com",
+            projectId: "engtiktokapp",
+            storageBucket: "engtiktokapp.firebasestorage.app",
+            messagingSenderId: "213733938342",
+            appId: "1:213733938342:web:575b536cd37b5a78b8d067"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+        
+        setPersistence(auth, browserLocalPersistence);
+
+        let currentUser = null;
+        let isGuestMode = false;
+        let base64Image = null;
+        let unsubscribeHistory = null;
+        let unsubscribeUser = null;
+        let userLogs = [];
+        let userData = null;
+        let mySkillChart = null;
+
+        // Tabs Logic
+        const tabForm = document.getElementById('tabForm');
+        const tabLeaderboard = document.getElementById('tabLeaderboard');
+        const tabSkills = document.getElementById('tabSkills');
+        const tabShop = document.getElementById('tabShop');
+        const viewForm = document.getElementById('viewForm');
+        const viewLeaderboard = document.getElementById('viewLeaderboard');
+        const viewSkills = document.getElementById('viewSkills');
+        const viewShop = document.getElementById('viewShop');
+
+        function setActiveTab(activeTab) {
+            [tabForm, tabLeaderboard, tabSkills, tabShop].forEach(t => {
+                t.classList.remove('bg-white', 'text-emerald-600', 'shadow-sm');
+                t.classList.add('text-slate-500');
+            });
+            activeTab.classList.add('bg-white', 'text-emerald-600', 'shadow-sm');
+            activeTab.classList.remove('text-slate-500');
+            [viewForm, viewLeaderboard, viewSkills, viewShop].forEach(v => v.classList.add('hidden'));
+        }
+
+        tabForm.addEventListener('click', () => {
+            setActiveTab(tabForm);
+            viewForm.classList.remove('hidden');
+        });
+
+        tabLeaderboard.addEventListener('click', () => {
+            setActiveTab(tabLeaderboard);
+            viewLeaderboard.classList.remove('hidden');
+            loadLeaderboard();
+            loadResources();
+        });
+
+        tabSkills.addEventListener('click', () => {
+            setActiveTab(tabSkills);
+            viewSkills.classList.remove('hidden');
+            renderSkillChart();
+        });
+
+        tabShop.addEventListener('click', () => {
+            setActiveTab(tabShop);
+            viewShop.classList.remove('hidden');
+            if(userData) renderShop();
+        });
+
+        // ---- Media Type & Skill Tag Logic ----
+        const MEDIA_COLORS = {
+            YouTube:  { border: 'border-red-400',    bg: 'bg-red-50',    text: 'text-red-600' },
+            Podcast:  { border: 'border-purple-400',  bg: 'bg-purple-50', text: 'text-purple-600' },
+            Article:  { border: 'border-blue-400',    bg: 'bg-blue-50',   text: 'text-blue-600' },
+            Game:     { border: 'border-green-400',   bg: 'bg-green-50',  text: 'text-green-600' },
+            Other:    { border: 'border-slate-400',   bg: 'bg-slate-100', text: 'text-slate-600' },
+        };
+        const SKILL_COLORS = {
+            Listening:  { border: 'border-cyan-400',    bg: 'bg-cyan-50',    text: 'text-cyan-700' },
+            Reading:    { border: 'border-blue-400',    bg: 'bg-blue-50',    text: 'text-blue-700' },
+            Vocabulary: { border: 'border-violet-400',  bg: 'bg-violet-50',  text: 'text-violet-700' },
+            Grammar:    { border: 'border-orange-400',  bg: 'bg-orange-50',  text: 'text-orange-700' },
+            Speaking:   { border: 'border-rose-400',    bg: 'bg-rose-50',    text: 'text-rose-700' },
+            Writing:    { border: 'border-emerald-400', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+        };
+
+        let selectedSkills = [];
+
+        // Media Type — single select
+        document.querySelectorAll('.media-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const media = btn.dataset.media;
+                const c = MEDIA_COLORS[media];
+                document.querySelectorAll('.media-btn').forEach(b => {
+                    const bc = MEDIA_COLORS[b.dataset.media];
+                    b.classList.remove(bc.border, bc.bg, 'scale-105', 'shadow-md');
+                    b.classList.add('border-slate-200', 'bg-slate-50');
+                    b.querySelector('span:last-child').classList.remove(bc.text);
+                    b.querySelector('span:last-child').classList.add('text-slate-600');
+                });
+                btn.classList.add(c.border, c.bg, 'scale-105', 'shadow-md');
+                btn.classList.remove('border-slate-200', 'bg-slate-50');
+                btn.querySelector('span:last-child').classList.add(c.text);
+                btn.querySelector('span:last-child').classList.remove('text-slate-600');
+                document.getElementById('selectedMedia').value = media;
+                localStorage.setItem('draftMedia', media);
+            });
+        });
+
+        // Skill Tags — multi select
+        document.querySelectorAll('.skill-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const skill = btn.dataset.skill;
+                const c = SKILL_COLORS[skill];
+                if (selectedSkills.includes(skill)) {
+                    selectedSkills = selectedSkills.filter(s => s !== skill);
+                    btn.classList.remove(c.border, c.bg, c.text);
+                    btn.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-600');
+                } else {
+                    selectedSkills.push(skill);
+                    btn.classList.add(c.border, c.bg, c.text);
+                    btn.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-600');
+                }
+                localStorage.setItem('draftSkills', JSON.stringify(selectedSkills));
+            });
+        });
+
+        function resetMediaAndSkills() {
+            document.getElementById('selectedMedia').value = '';
+            selectedSkills = [];
+            localStorage.removeItem('draftMedia');
+            localStorage.removeItem('draftSkills');
+            document.querySelectorAll('.media-btn').forEach(b => {
+                const bc = MEDIA_COLORS[b.dataset.media];
+                b.classList.remove(bc.border, bc.bg, 'scale-105', 'shadow-md');
+                b.classList.add('border-slate-200', 'bg-slate-50');
+                b.querySelector('span:last-child').classList.remove(bc.text);
+                b.querySelector('span:last-child').classList.add('text-slate-600');
+            });
+            document.querySelectorAll('.skill-btn').forEach(b => {
+                const bc = SKILL_COLORS[b.dataset.skill];
+                b.classList.remove(bc.border, bc.bg, bc.text);
+                b.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-600');
+            });
+        }
+
+        // QoL: Draft System
+        function loadDrafts() {
+            if(localStorage.getItem('studentName')) document.getElementById('studentName').value = localStorage.getItem('studentName');
+            if(localStorage.getItem('draftTopic')) {
+                document.getElementById('topic').value = localStorage.getItem('draftTopic');
+                document.getElementById('draftIndicator1').classList.remove('hidden');
+            }
+            if(localStorage.getItem('draftSummary')) {
+                document.getElementById('summary').value = localStorage.getItem('draftSummary');
+                document.getElementById('draftIndicator2').classList.remove('hidden');
+                updateWordCount();
+            }
+            const savedMedia = localStorage.getItem('draftMedia');
+            if (savedMedia) {
+                const b = document.querySelector(`.media-btn[data-media="${savedMedia}"]`);
+                if (b) b.click();
+            }
+            const savedSkills = JSON.parse(localStorage.getItem('draftSkills') || '[]');
+            savedSkills.forEach(s => {
+                const b = document.querySelector(`.skill-btn[data-skill="${s}"]`);
+                if (b && !selectedSkills.includes(s)) b.click();
+            });
+        }
+        
+        function updateWordCount() {
+            const text = document.getElementById('summary').value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            document.getElementById('wordCountText').textContent = `${words} คำ`;
+        }
+
+        document.getElementById('studentName').addEventListener('input', (e) => localStorage.setItem('studentName', e.target.value));
+        document.getElementById('topic').addEventListener('input', (e) => { 
+            localStorage.setItem('draftTopic', e.target.value); 
+            document.getElementById('draftIndicator1').classList.remove('hidden'); 
+        });
+        document.getElementById('summary').addEventListener('input', (e) => { 
+            localStorage.setItem('draftSummary', e.target.value); 
+            document.getElementById('draftIndicator2').classList.remove('hidden');
+            updateWordCount();
+        });
+
+        // QoL: Voice Typing in Summary (Speech to Text)
+        const voiceTypeBtn = document.getElementById('voiceTypeBtn');
+        let speechRecognition = null;
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            speechRecognition = new SpeechRec();
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = false;
+            speechRecognition.lang = 'en-US'; // Default to English, fallback to th
+            
+            speechRecognition.onresult = (e) => {
+                const spoken = e.results[0][0].transcript;
+                const summaryEl = document.getElementById('summary');
+                summaryEl.value = summaryEl.value ? `${summaryEl.value} ${spoken}` : spoken;
+                localStorage.setItem('draftSummary', summaryEl.value);
+                updateWordCount();
+                voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone"></i> พูดสรุป';
+                voiceTypeBtn.classList.remove('bg-rose-100', 'text-rose-700', 'animate-pulse');
+            };
+            
+            speechRecognition.onerror = () => {
+                voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone"></i> พูดสรุป';
+                voiceTypeBtn.classList.remove('bg-rose-100', 'text-rose-700', 'animate-pulse');
+            };
+            
+            speechRecognition.onend = () => {
+                voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone"></i> พูดสรุป';
+                voiceTypeBtn.classList.remove('bg-rose-100', 'text-rose-700', 'animate-pulse');
+            };
+
+            voiceTypeBtn.addEventListener('click', () => {
+                try {
+                    voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone animate-spin"></i> กำลังฟัง...';
+                    voiceTypeBtn.classList.add('bg-rose-100', 'text-rose-700', 'animate-pulse');
+                    speechRecognition.start();
+                } catch(err) {
+                    speechRecognition.stop();
+                }
+            });
+        } else {
+            voiceTypeBtn.classList.add('hidden');
+        }
+
+        // QoL: Clipboard Paste (Ctrl+V) for Screenshot
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    processImageFile(blob);
+                    break;
+                }
+            }
+        });
+
+        // QoL: Guest Mode Logic
+        document.getElementById('guestLoginBtn').addEventListener('click', () => {
+            Swal.fire({
+                title: '👤 เข้าใช้งานโหมด Guest',
+                html: `
+                    <p class="text-xs text-slate-500 mb-3 text-left">กรอกชื่อและห้องของคุณเพื่อเริ่มส่งงานได้ทันที</p>
+                    <input id="guestNameInput" class="w-full border-2 border-slate-200 rounded-xl p-3 text-sm focus:border-emerald-500 mb-2 font-bold" placeholder="เช่น ด.ช.ธนกฤต ม.2/3 เลขที่ 12" value="${localStorage.getItem('studentName') || ''}">
+                `,
+                confirmButtonText: 'เริ่มใช้งาน',
+                confirmButtonColor: '#10b981',
+                showCancelButton: true,
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const val = document.getElementById('guestNameInput').value.trim();
+                    if (!val) { Swal.showValidationMessage('กรุณากรอกชื่อ'); return false; }
+                    return val;
+                }
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    const name = res.value;
+                    localStorage.setItem('studentName', name);
+                    localStorage.setItem('isGuestMode', 'true');
+                    isGuestMode = true;
+                    currentUser = {
+                        uid: 'guest_' + btoa(encodeURIComponent(name)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
+                        email: name + '@guest.local',
+                        displayName: name,
+                        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
+                    };
+                    initAppUI(currentUser, true);
+                }
+            });
+        });
+
+        function initAppUI(user, isGuest = false) {
+            currentUser = user;
+            document.getElementById('userEmail').textContent = user.displayName || user.email;
+            document.getElementById('userPhoto').src = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email)}`;
+            
+            const roleEl = document.getElementById('userRole');
+            const guestBadge = document.getElementById('guestBadge');
+            
+            if (isGuest) {
+                roleEl.textContent = "นักเรียน (Guest Mode)";
+                guestBadge.classList.remove('hidden');
+            } else {
+                const TEACHER_EMAILS = ['susumiaraki@gmail.com', 's67121110074@ssru.ac.th'];
+                const isTeacher = TEACHER_EMAILS.includes(user.email);
+                if (isTeacher) {
+                    roleEl.textContent = "คุณครู / Teacher";
+                    roleEl.classList.replace('text-emerald-600', 'text-indigo-500');
+                } else {
+                    roleEl.textContent = "นักเรียน / Student";
+                    roleEl.classList.replace('text-indigo-500', 'text-emerald-600');
+                }
+                guestBadge.classList.add('hidden');
+            }
+
+            loadDrafts();
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            loadUserHistory(user.uid);
+
+            document.getElementById('loadingOverlay').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
+
+            // Connect user doc for coins & shop
+            if (!isGuest) {
+                connectUserShop(user);
+            } else {
+                userData = { coins: 50, inventory: [], equippedFrame: null, equippedName: null };
+                document.getElementById('coinCount').textContent = 50;
+            }
+        }
+
+        async function connectUserShop(user) {
+            try {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, { coins: 0, inventory: [], equippedFrame: null, equippedName: null });
+                }
+                
+                const TEACHER_EMAILS = ['susumiaraki@gmail.com', 's67121110074@ssru.ac.th'];
+                if (TEACHER_EMAILS.includes(user.email)) {
+                    if (userSnap.exists() && (userSnap.data().coins || 0) < 50000) {
+                        await updateDoc(userRef, { coins: 999999 });
+                    }
+                }
+
+                unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        userData = docSnap.data();
+                        document.getElementById('coinCount').textContent = userData.coins || 0;
+                        applyEquippedItems();
+                        if(!viewShop.classList.contains('hidden')) renderShop();
+                    }
+                });
+            } catch (err) {
+                console.warn("Shop sync offline or restricted:", err);
+            }
+        }
+
+        onAuthStateChanged(auth, async user => {
+            if (user) {
+                isGuestMode = false;
+                localStorage.removeItem('isGuestMode');
+                initAppUI(user, false);
+            } else {
+                if (localStorage.getItem('isGuestMode') === 'true' && localStorage.getItem('studentName')) {
+                    const name = localStorage.getItem('studentName');
+                    currentUser = {
+                        uid: 'guest_' + btoa(encodeURIComponent(name)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
+                        email: name + '@guest.local',
+                        displayName: name,
+                        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
+                    };
+                    initAppUI(currentUser, true);
+                } else {
+                    currentUser = null;
+                    document.getElementById('loginSection').classList.remove('hidden');
+                    document.getElementById('appSection').classList.add('hidden');
+                    if(unsubscribeHistory) unsubscribeHistory();
+                    if(unsubscribeUser) unsubscribeUser();
+                    
+                    document.getElementById('loadingOverlay').classList.add('opacity-0');
+                    setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
+                }
+            }
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', () => signInWithPopup(auth, provider).catch(err => Swal.fire('Error', err.message, 'error')));
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            Swal.fire({
+                title: 'ออกจากระบบ?',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'ใช่',
+                cancelButtonText: 'ยกเลิก'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    localStorage.removeItem('isGuestMode');
+                    signOut(auth);
+                    location.reload();
+                }
+            });
+        });
+
+        // Image Compression & Processing
+        function processImageFile(file) {
+            if (!file) return;
+            document.getElementById('fileNameDisplay').innerHTML = `<span class="text-amber-500 font-bold">กำลังย่อรูปภาพ...</span>`;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width, h = img.height;
+                    if (w > h && w > 800) { h *= 800/w; w = 800; } else if (h > 800) { w *= 800/h; h = 800; }
+                    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    base64Image = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('imagePreview').src = base64Image;
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    document.getElementById('previewContainer').classList.remove('hidden');
+                    document.getElementById('fileNameDisplay').textContent = "แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป";
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            processImageFile(e.target.files[0]);
+        });
+
+        document.getElementById('removeImageBtn').addEventListener('click', (e) => {
+            e.stopPropagation(); document.getElementById('imageFile').value = ""; base64Image = null;
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('fileNameDisplay').textContent = "แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป";
+        });
+
+        // Submit Form
+        document.getElementById('learningForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const mediaType = document.getElementById('selectedMedia').value;
+            if (!mediaType) {
+                Swal.fire({ icon: 'warning', title: 'เลือกสื่อด้วยนะ!', text: 'กรุณาเลือกประเภทสื่อที่ใช้เรียน', timer: 2000, showConfirmButton: false });
+                return;
+            }
+            const btn = document.getElementById('submitBtn');
+            const name = document.getElementById('studentName').value;
+            localStorage.setItem('studentName', name);
+            btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap animate-spin"></i> บันทึก...';
+            try {
+                await addDoc(collection(db, "learning_logs"), {
+                    uid: currentUser.uid, email: currentUser.email, studentName: name,
+                    userPhoto: currentUser.photoURL || '',
+                    topic: document.getElementById('topic').value, summary: document.getElementById('summary').value,
+                    image: base64Image, mediaType: mediaType, skills: selectedSkills,
+                    timestamp: serverTimestamp()
+                });
+                
+                // Add coins
+                if (!isGuestMode && currentUser.uid) {
+                    try {
+                        await updateDoc(doc(db, "users", currentUser.uid), { coins: increment(10) });
+                    } catch (e) { console.error("Could not add coins:", e); }
+                }
+
+                document.getElementById('topic').value = ""; document.getElementById('summary').value = ""; document.getElementById('removeImageBtn').click();
+                localStorage.removeItem('draftTopic'); localStorage.removeItem('draftSummary');
+                document.getElementById('draftIndicator1').classList.add('hidden'); document.getElementById('draftIndicator2').classList.add('hidden');
+                updateWordCount();
+                resetMediaAndSkills();
+                
+                // Confetti!
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                Swal.fire({title: 'ส่งงานสำเร็จ! 🎉', text: 'ได้รับ 10 💰', icon: 'success', timer: 2000, showConfirmButton: false});
+            } catch (error) { Swal.fire('Error', 'ไม่สามารถบันทึกได้', 'error'); }
+            finally { btn.disabled = false; btn.innerHTML = 'ส่งงานรับ 10 💰 <i class="ph-bold ph-paper-plane-right text-lg"></i>'; }
+        });
+
+        // History & Streak (พร้อมโชว์ Feedback จากครู)
+        function loadUserHistory(uid) {
+            unsubscribeHistory = onSnapshot(query(collection(db, "learning_logs"), where("uid", "==", uid)), (snapshot) => {
+                const logs = []; snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
+                logs.sort((a, b) => (b.timestamp?.toMillis() || Date.now()) - (a.timestamp?.toMillis() || Date.now()));
+                userLogs = logs;
+                
+                const list = document.getElementById('historyList');
+                document.getElementById('historyCount').textContent = logs.length;
+                if (logs.length === 0) { list.innerHTML = `<div class="text-center text-slate-400 py-6">ยังไม่มีประวัติ เริ่มเลย!</div>`; return; }
+
+                list.innerHTML = '';
+                const MEDIA_ICON = { YouTube:'🎬', Podcast:'🎧', Article:'📖', Game:'🎮', Other:'✨' };
+                const MEDIA_BADGE_CLASS = {
+                    YouTube: 'bg-red-50 text-red-600 border-red-200',
+                    Podcast: 'bg-purple-50 text-purple-600 border-purple-200',
+                    Article: 'bg-blue-50 text-blue-600 border-blue-200',
+                    Game:    'bg-green-50 text-green-600 border-green-200',
+                    Other:   'bg-slate-100 text-slate-500 border-slate-200',
+                };
+                const SKILL_CHIP_CLASS = {
+                    Listening:  'bg-cyan-50 text-cyan-700 border-cyan-200',
+                    Reading:    'bg-blue-50 text-blue-700 border-blue-200',
+                    Vocabulary: 'bg-violet-50 text-violet-700 border-violet-200',
+                    Grammar:    'bg-orange-50 text-orange-700 border-orange-200',
+                    Speaking:   'bg-rose-50 text-rose-700 border-rose-200',
+                    Writing:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+                };
+                logs.forEach(log => {
+                    let d = log.timestamp ? log.timestamp.toDate().toLocaleDateString('th-TH', {day:'numeric', month:'short'}) : "เพิ่งส่ง";
+
+                    // Media Badge
+                    let mediaBadge = '';
+                    if (log.mediaType) {
+                        const cls = MEDIA_BADGE_CLASS[log.mediaType] || 'bg-slate-100 text-slate-500 border-slate-200';
+                        const icon = MEDIA_ICON[log.mediaType] || '✨';
+                        mediaBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}">${icon} ${log.mediaType}</span>`;
+                    }
+
+                    // Skill Chips
+                    let skillChips = '';
+                    if (log.skills && log.skills.length > 0) {
+                        skillChips = log.skills.map(s => {
+                            const cls = SKILL_CHIP_CLASS[s] || 'bg-slate-100 text-slate-500 border-slate-200';
+                            return `<span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}">${s}</span>`;
+                        }).join('');
+                    }
+
+                    // Teacher Feedback
+                    let feedbackHtml = '';
+                    if (log.score || log.teacherFeedback) {
+                        feedbackHtml = `
+                            <div class="mt-3 bg-amber-50 border border-amber-100 rounded-lg p-3 relative shadow-inner">
+                                <div class="absolute -top-2.5 right-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">คุณครูตรวจแล้ว</div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">⭐</span>
+                                    <span class="font-black text-amber-700 text-sm">คะแนน: ${log.score || '-'} / 10</span>
+                                </div>
+                                <p class="text-xs text-amber-600 font-semibold">${log.teacherFeedback || ''}</p>
+                            </div>
+                        `;
+                    }
+
+                    const borderColorMap = {
+                        YouTube: 'border-l-red-400',
+                        Podcast: 'border-l-purple-400',
+                        Article: 'border-l-blue-400',
+                        Game: 'border-l-green-400',
+                        Other: 'border-l-slate-400'
+                    };
+                    const leftBorderClass = log.mediaType ? (borderColorMap[log.mediaType] || 'border-l-slate-400') : 'border-l-slate-400';
+
+                    list.innerHTML += `
+                        <div class="p-4 bg-white border border-slate-100 border-l-4 ${leftBorderClass} rounded-2xl relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-bold text-slate-700 text-sm line-clamp-1 w-3/4">${log.topic}</h4>
+                                <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">${d}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 line-clamp-2 mb-3">${log.summary}</p>
+                            <div class="flex flex-wrap gap-1.5 items-center">
+                                ${mediaBadge}
+                                ${skillChips}
+                            </div>
+                            ${feedbackHtml}
+                        </div>
+                    `;
+                });
+                
+                // Streak Calculation
+                const dates = [...new Set(logs.filter(l => l.timestamp).map(l => { const dt = l.timestamp.toDate(); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; }))];
+                let streak = 0;
+                if (dates.length > 0) {
+                    const t = new Date(), y = new Date(t); y.setDate(y.getDate() - 1);
+                    const tS = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`, yS = `${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
+                    if (dates[0] === tS || dates[0] === yS) {
+                        streak = 1; let cD = new Date(dates[0]); cD.setHours(0,0,0,0);
+                        for (let i = 1; i < dates.length; i++) {
+                            let pD = new Date(dates[i]); pD.setHours(0,0,0,0);
+                            if (Math.ceil(Math.abs(cD - pD) / 86400000) === 1) { streak++; cD = pD; } else break;
+                        }
+                    }
+                }
+                document.getElementById('streakCount').textContent = streak;
+                renderBadges(logs, streak);
+            });
+        }
+
+        // Leaderboard Logic
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '<div class="p-6 text-center text-slate-400"><i class="ph-bold ph-spinner-gap animate-spin text-2xl"></i> กำลังประมวลผล...</div>';
+            
+            try {
+                const [logsSnap, usersSnap] = await Promise.all([
+                    getDocs(collection(db, "learning_logs")),
+                    getDocs(collection(db, "users"))
+                ]);
+                
+                const shopDataMap = {};
+                usersSnap.forEach(doc => shopDataMap[doc.id] = doc.data());
+
+                const users = {};
+                
+                logsSnap.forEach(doc => {
+                    const data = doc.data();
+                    const name = data.studentName || data.email;
+                    const userAvatar = data.userPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+                    if(!users[name]) users[name] = { uid: data.uid, count: 0, lastTopic: data.topic, avatar: userAvatar };
+                    users[name].count++;
+                });
+
+                const sortedUsers = Object.entries(users).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+                list.innerHTML = '';
+                if(sortedUsers.length === 0) { list.innerHTML = '<div class="p-4 text-center text-sm text-slate-500">ยังไม่มีข้อมูลในระบบ</div>'; return; }
+
+                sortedUsers.forEach((u, index) => {
+                    let medal = `<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 text-sm">${index + 1}</div>`;
+                    if (index === 0) medal = `<div class="text-3xl filter drop-shadow-md">🥇</div>`;
+                    if (index === 1) medal = `<div class="text-3xl filter drop-shadow-md">🥈</div>`;
+                    if (index === 2) medal = `<div class="text-3xl filter drop-shadow-md">🥉</div>`;
+
+                    let frameClass = "w-full h-full rounded-full object-cover relative z-10 bg-white border border-slate-200";
+                    let frameWrapClass = "w-10 h-10 rounded-full flex-shrink-0 relative my-1";
+                    let nameClass = "font-bold text-slate-800 text-sm";
+                    
+                    const sData = shopDataMap[u.uid];
+                    if (sData) {
+                        if (sData.equippedFrame) {
+                            const fItem = SHOP_ITEMS.frames.find(f => f.id === sData.equippedFrame);
+                            if (fItem) frameClass = `w-full h-full rounded-full object-cover relative z-10 bg-white ${fItem.class}`;
+                        }
+                        if (sData.equippedName) {
+                            const nItem = SHOP_ITEMS.names.find(n => n.id === sData.equippedName);
+                            if (nItem) nameClass = `font-bold text-sm ${nItem.class}`;
+                        }
+                    }
+
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 flex justify-center">${medal}</div>
+                                <div class="${frameWrapClass}">
+                                    <img src="${u.avatar}" class="${frameClass}">
+                                </div>
+                                <div>
+                                    <h4 class="${nameClass}">${u.name}</h4>
+                                    <p class="text-[10px] text-slate-500 truncate w-32">ล่าสุด: ${u.lastTopic}</p>
+                                </div>
+                            </div>
+                            <div class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl font-black text-sm border border-indigo-100 shadow-sm">
+                                ${u.count} งาน
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                list.innerHTML = '<div class="p-4 text-center text-red-500 text-sm">โหลดข้อมูลไม่สำเร็จ</div>';
+            }
+        }
+
+        // Badge System
+        function renderBadges(logs, streak) {
+            const badgeListEl = document.getElementById('badgeList');
+            if (!badgeListEl) return;
+
+            const totalCount = logs.length;
+            const mediaCounts = {};
+            const skillsSeen = new Set();
+            logs.forEach(log => {
+                if (log.mediaType) mediaCounts[log.mediaType] = (mediaCounts[log.mediaType] || 0) + 1;
+                if (log.skills) log.skills.forEach(s => skillsSeen.add(s));
+            });
+
+            const ALL_SKILLS = ['Listening', 'Reading', 'Vocabulary', 'Grammar', 'Speaking', 'Writing'];
+            const allSkillsDone = ALL_SKILLS.every(s => skillsSeen.has(s));
+
+            const badges = [
+                { id: 'b1', emoji: '🌱', name: 'มือใหม่',       unlocked: totalCount >= 1 },
+                { id: 'b2', emoji: '🔥', name: 'Streak 3 วัน',  unlocked: streak >= 3 },
+                { id: 'b3', emoji: '⚡', name: 'Streak 7 วัน',  unlocked: streak >= 7 },
+                { id: 'b4', emoji: '📚', name: 'นักอ่าน',        unlocked: (mediaCounts['Article'] || 0) >= 3 },
+                { id: 'b5', emoji: '🎬', name: 'YouTube Fan',    unlocked: (mediaCounts['YouTube'] || 0) >= 5 },
+                { id: 'b6', emoji: '🎧', name: 'Podcast Pro',    unlocked: (mediaCounts['Podcast'] || 0) >= 3 },
+                { id: 'b7', emoji: '🏆', name: '10 งาน',         unlocked: totalCount >= 10 },
+                { id: 'b8', emoji: '🌟', name: 'ครบทุกทักษะ',   unlocked: allSkillsDone },
+            ];
+
+            let savedUnlocked = JSON.parse(localStorage.getItem('unlockedBadges') || '[]');
+            let newUnlockCount = 0;
+            
+            badges.forEach(b => {
+                if (b.unlocked && !savedUnlocked.includes(b.id)) {
+                    savedUnlocked.push(b.id);
+                    newUnlockCount++;
+                }
+            });
+
+            if (newUnlockCount > 0) {
+                localStorage.setItem('unlockedBadges', JSON.stringify(savedUnlocked));
+                setTimeout(() => {
+                    confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 }, colors: ['#facc15', '#4ade80', '#3b82f6'] });
+                    Swal.fire({
+                        title: 'ยินดีด้วย! ปลดล็อกเหรียญตราใหม่ 🏅',
+                        icon: 'success',
+                        showConfirmButton: true,
+                        confirmButtonText: 'เยี่ยมเลย!',
+                        confirmButtonColor: '#10b981'
+                    });
+                }, 800);
+            }
+
+            badgeListEl.innerHTML = badges.map(b => {
+                const locked = !b.unlocked;
+                return `
+                    <div class="flex-shrink-0 bg-white rounded-2xl p-3 flex flex-col items-center gap-1 border-2 ${locked ? 'border-slate-100 opacity-40 grayscale' : 'border-emerald-100 shadow-sm'} min-w-[72px] relative transition-transform hover:scale-105">
+                        <span class="text-2xl">${b.emoji}</span>
+                        <span class="text-[10px] font-bold text-slate-700 text-center leading-tight">${b.name}</span>
+                        ${!locked ? '<span class="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-sm">✓</span>' : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        // Shop System
+        const SHOP_ITEMS = {
+            frames: [
+                { id: 'frame_neon', name: 'Neon Green', price: 50, class: 'frame-neon', emoji: '🟢' },
+                { id: 'frame_fire', name: 'Blazing Fire', price: 100, class: 'frame-fire', emoji: '🔥' },
+                { id: 'frame_ocean', name: 'Ocean Wave', price: 120, class: 'frame-ocean', emoji: '🌊' },
+                { id: 'frame_purple', name: 'Amethyst', price: 150, class: 'frame-purple', emoji: '🔮' },
+                { id: 'frame_gold', name: 'Royal Gold', price: 200, class: 'frame-gold', emoji: '👑' },
+                { id: 'frame_cyber', name: 'Cyberpunk', price: 300, class: 'frame-cyber', emoji: '🤖' }
+            ],
+            names: [
+                { id: 'name_rainbow', name: 'Rainbow Colors', price: 80, class: 'name-rainbow', emoji: '🌈' },
+                { id: 'name_sparkle', name: 'Pink Sparkle', price: 120, class: 'name-sparkle', emoji: '✨' },
+                { id: 'name_hacker', name: 'Hacker Matrix', price: 150, class: 'name-hacker', emoji: '💻' },
+                { id: 'name_fire', name: 'Hell Fire', price: 200, class: 'name-fire', emoji: '🔥' },
+                { id: 'name_gold', name: 'Golden VIP', price: 250, class: 'name-gold', emoji: '⭐' }
+            ]
+        };
+
+        window.buyItem = async function(itemId, price, type) {
+            if(!userData) return;
+            if((userData.coins || 0) < price) {
+                Swal.fire('เหรียญไม่พอ!', 'พยายามส่งงานเพิ่มเพื่อสะสมเหรียญนะ 💰', 'error');
+                return;
+            }
+            
+            Swal.fire({
+                title: 'ยืนยันการซื้อ?',
+                text: `คุณต้องการใช้ ${price} เหรียญเพื่อซื้อสิ่งนี้ใช่ไหม?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'ซื้อเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.showLoading();
+                        const userRef = doc(db, "users", currentUser.uid);
+                        await updateDoc(userRef, {
+                            coins: increment(-price),
+                            inventory: [...(userData.inventory || []), itemId]
+                        });
+                        Swal.fire('สำเร็จ!', 'คุณได้รับไอเทมใหม่แล้ว ลองสวมใส่เลย!', 'success');
+                    } catch (e) { Swal.fire('Error', 'ไม่สามารถซื้อได้', 'error'); }
+                }
+            });
+        };
+
+        window.equipItem = async function(itemId, type) {
+            if(!userData) return;
+            try {
+                const userRef = doc(db, "users", currentUser.uid);
+                const isEquipped = (type === 'frame' && userData.equippedFrame === itemId) || (type === 'name' && userData.equippedName === itemId);
+                const updateObj = {};
+                
+                if (type === 'frame') updateObj.equippedFrame = isEquipped ? null : itemId;
+                if (type === 'name') updateObj.equippedName = isEquipped ? null : itemId;
+                
+                await updateDoc(userRef, updateObj);
+            } catch (e) { console.error(e); }
+        };
+
+        function renderShop() {
+            const framesEl = document.getElementById('shopFrames');
+            const namesEl = document.getElementById('shopNameEffects');
+            if(!framesEl || !namesEl) return;
+
+            const inv = userData?.inventory || [];
+            const eqFrame = userData?.equippedFrame;
+            const eqName = userData?.equippedName;
+
+            const renderItem = (item, type) => {
+                const owned = inv.includes(item.id);
+                const equipped = (type === 'frame' && eqFrame === item.id) || (type === 'name' && eqName === item.id);
+                let btnHtml = '';
+                if(owned) {
+                    btnHtml = `<button onclick="equipItem('${item.id}', '${type}')" class="w-full mt-2 py-1.5 rounded-lg text-xs font-bold transition-colors ${equipped ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-emerald-500 text-white hover:bg-emerald-600'}">${equipped ? 'ถอดออก' : 'สวมใส่'}</button>`;
+                } else {
+                    btnHtml = `<button onclick="buyItem('${item.id}', ${item.price}, '${type}')" class="w-full mt-2 py-1.5 rounded-lg text-xs font-bold bg-amber-400 text-amber-900 hover:bg-amber-500 flex justify-center gap-1">💰 ${item.price}</button>`;
+                }
+
+                return `
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center shadow-sm hover:shadow transition-shadow">
+                        <div class="text-3xl mb-1">${item.emoji}</div>
+                        <p class="text-xs font-bold text-slate-700">${item.name}</p>
+                        ${btnHtml}
+                    </div>
+                `;
+            };
+
+            framesEl.innerHTML = SHOP_ITEMS.frames.map(i => renderItem(i, 'frame')).join('');
+            namesEl.innerHTML = SHOP_ITEMS.names.map(i => renderItem(i, 'name')).join('');
+        }
+
+        function applyEquippedItems() {
+            if(!userData) return;
+            const photoEl = document.getElementById('userPhoto');
+            const nameEl = document.getElementById('userEmail');
+            
+            photoEl.className = "w-full h-full rounded-full object-cover bg-white z-10 relative border-4 border-white shadow-md";
+            nameEl.className = "text-lg sm:text-xl font-black text-slate-800 truncate transition-all";
+
+            if (userData.equippedFrame) {
+                const frameItem = SHOP_ITEMS.frames.find(f => f.id === userData.equippedFrame);
+                if(frameItem) photoEl.classList.add(frameItem.class);
+            }
+            if (userData.equippedName) {
+                const nameItem = SHOP_ITEMS.names.find(n => n.id === userData.equippedName);
+                if(nameItem) {
+                    nameEl.classList.add(nameItem.class);
+                    nameEl.classList.remove('text-slate-800');
+                }
+            }
+        }
+
+        // Skill Radar Chart
+        function renderSkillChart() {
+            const skills = ['Listening', 'Reading', 'Vocabulary', 'Grammar', 'Speaking', 'Writing'];
+            const skillEmojis = { Listening:'🎧', Reading:'📖', Vocabulary:'📝', Grammar:'📐', Speaking:'🗣️', Writing:'✍️' };
+            const skillCardColors = {
+                Listening:  { bg: 'bg-cyan-50',    text: 'text-cyan-700',    bar: 'bg-cyan-400' },
+                Reading:    { bg: 'bg-blue-50',    text: 'text-blue-700',    bar: 'bg-blue-400' },
+                Vocabulary: { bg: 'bg-violet-50',  text: 'text-violet-700',  bar: 'bg-violet-400' },
+                Grammar:    { bg: 'bg-orange-50',  text: 'text-orange-700',  bar: 'bg-orange-400' },
+                Speaking:   { bg: 'bg-rose-50',    text: 'text-rose-700',    bar: 'bg-rose-400' },
+                Writing:    { bg: 'bg-emerald-50', text: 'text-emerald-700', bar: 'bg-emerald-400' },
+            };
+
+            const counts = {};
+            skills.forEach(s => counts[s] = 0);
+            userLogs.forEach(log => {
+                if (log.skills) log.skills.forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+            });
+
+            const data = skills.map(s => counts[s]);
+            const total = data.reduce((a, b) => a + b, 0) || 1;
+
+            const ctx = document.getElementById('skillRadarChart');
+            if (!ctx) return;
+
+            if (mySkillChart) { mySkillChart.destroy(); mySkillChart = null; }
+
+            mySkillChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: skills,
+                    datasets: [{
+                        label: 'ทักษะ',
+                        data: data,
+                        fill: true,
+                        backgroundColor: 'rgba(16,185,129,0.2)',
+                        borderColor: '#10b981',
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#10b981',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { r: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, pointLabels: { font: { size: 11, weight: 'bold' } } } }
+                }
+            });
+
+            const breakdownEl = document.getElementById('skillBreakdownCards');
+            if (!breakdownEl) return;
+            breakdownEl.innerHTML = skills.map(s => {
+                const c = skillCardColors[s];
+                const pct = Math.round((counts[s] / total) * 100);
+                return `
+                    <div class="${c.bg} rounded-2xl p-3">
+                        <div class="flex items-center gap-1 mb-1">
+                            <span class="text-base">${skillEmojis[s]}</span>
+                            <span class="text-xs font-black ${c.text} truncate">${s}</span>
+                        </div>
+                        <p class="text-2xl font-black ${c.text}">${counts[s]}</p>
+                        <div class="mt-1 bg-white/60 rounded-full h-1.5 overflow-hidden">
+                            <div class="${c.bar} h-full rounded-full transition-all" style="width:${pct}%"></div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Resource Board
+        async function loadResources() {
+            const resourceListEl = document.getElementById('resourceList');
+            if (!resourceListEl) return;
+            resourceListEl.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">กำลังโหลด...</div>';
+
+            const MEDIA_ICON = { YouTube:'🎬', Podcast:'🎧', Article:'📖', Game:'🎮', Other:'✨' };
+
+            try {
+                const q = query(collection(db, "resources"), orderBy("timestamp", "desc"));
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    resourceListEl.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">ครูยังไม่ได้เพิ่มสื่อแนะนำ</div>';
+                    return;
+                }
+
+                resourceListEl.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    const icon = MEDIA_ICON[r.mediaType] || '✨';
+                    resourceListEl.innerHTML += `
+                        <a href="${r.url || '#'}" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-emerald-50 cursor-pointer border border-transparent hover:border-emerald-200 transition-all">
+                            <span class="text-2xl flex-shrink-0">${icon}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-slate-800 text-sm truncate">${r.title || 'ไม่มีชื่อ'}</p>
+                                ${r.description ? `<p class="text-xs text-slate-400 truncate">${r.description}</p>` : ''}
+                            </div>
+                            <i class="ph-bold ph-arrow-square-out text-slate-400 flex-shrink-0"></i>
+                        </a>`;
+                });
+            } catch (err) {
+                resourceListEl.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">ไม่สามารถโหลดสื่อได้</div>';
+            }
+        }
+    </script>
+</body>
 </html>
