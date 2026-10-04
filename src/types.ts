@@ -1,4 +1,5 @@
 export type ScreenName =
+  | 'login'
   | 'dashboard'
   | 'situation'
   | 'voice'
@@ -75,9 +76,13 @@ export interface UserProfile {
   grade: string;
   avatar: string;
   xp: number;
+  coins: number;
   streak: number;
   completedQuests: string[];
   isLoggedIn: boolean;
+  equippedFrame?: string | null;
+  equippedNameEffect?: string | null;
+  inventory: string[];
 }
 
 export interface AssessmentQuestion {

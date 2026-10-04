@@ -45,14 +45,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const filteredScenarios = SCENARIOS.filter((s) => s.level === selectedLevel);
 
   // Student's reviewed submissions count
-  const mySubmissions = submissions.filter((s) => {
-    if (!profile.isLoggedIn) return true;
+  const mySubmissions = profile.isLoggedIn ? submissions.filter((s) => {
     return (
       s.studentName.toLowerCase() === profile.name.toLowerCase() ||
       s.studentNo === profile.grade ||
       s.studentNo === profile.studentNumber
     );
-  });
+  }) : [];
   const reviewedCount = mySubmissions.filter(
     (s) => (s.fluencyScore || 0) > 0 || (s.appropriatenessScore || 0) > 0
   ).length;

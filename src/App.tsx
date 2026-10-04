@@ -14,7 +14,7 @@ import {
   uploadAndSaveSubmission,
   syncStudentProfileToDB,
 } from './lib/supabase';
-import { LoginModal } from './components/LoginModal';
+import { LoginPage } from './components/LoginPage';
 import {
   Sparkles,
   Home,
@@ -34,8 +34,10 @@ const GUEST_PROFILE: UserProfile = {
   grade: 'โหมดทดลอง',
   avatar: '👤',
   xp: 0,
+  coins: 0,
   streak: 1,
   completedQuests: [],
+  inventory: [],
   isLoggedIn: false,
 };
 
@@ -55,11 +57,17 @@ if (typeof window !== 'undefined') {
 }
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
+  const [currentScreen, setCurrentScreen] = useState<ScreenName>(() => {
+    try {
+      const saved = localStorage.getItem('eng_profile');
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (p.isLoggedIn || p.name === 'Guest User') return 'dashboard';
+      }
+    } catch {}
+    return 'login';
+  });
   const [activeScenario, setActiveScenario] = useState<Scenario>(SCENARIOS[0]);
-
-  // Login Modal State
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Teacher Security Gate (PIN Protected)
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
@@ -108,6 +116,47 @@ export default function App() {
   useEffect(() => {
     refreshSubmissions();
   }, [refreshSubmissions]);
+
+  // Listen to Supabase Auth state changes
+  useEffect(() => {
+    import('./lib/supabase').then(({ getSupabaseClient }) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const metadata = session.user.user_metadata || {};
+          // Only update if not already logged in or if it's a fresh login
+          setProfile((prev) => {
+            if (prev.isLoggedIn && prev.name !== 'Guest User' && prev.name !== 'Student') return prev;
+            
+            const newProfile: UserProfile = {
+              name: metadata.name || session.user.email?.split('@')[0] || 'Student',
+              grade: metadata.grade || '-',
+              studentNumber: metadata.studentNumber || '-',
+              avatar: metadata.avatar || '👩‍🎓',
+              xp: prev.xp > 0 ? prev.xp : 50,
+              coins: prev.coins || 0,
+              streak: prev.streak || 1,
+              completedQuests: prev.completedQuests || [],
+              inventory: prev.inventory || [],
+              isLoggedIn: true,
+            };
+            syncStudentProfileToDB(newProfile);
+            return newProfile;
+          });
+          setCurrentScreen('dashboard');
+        } else if (event === 'SIGNED_OUT') {
+          setProfile(GUEST_PROFILE);
+          setCurrentScreen('login');
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    });
+  }, []);
 
   // Save profile to localStorage on change
   useEffect(() => {
@@ -262,9 +311,12 @@ export default function App() {
             {/* Student Login / Logout Action */}
             {profile.isLoggedIn ? (
               <button
-                onClick={() => {
-                  if (window.confirm('ต้องการออกจากระบบและกลับสู่โหมด Guest หรือไม่?')) {
+                onClick={async () => {
+                  if (window.confirm('ต้องการออกจากระบบหรือไม่?')) {
+                    const { signOut } = await import('./lib/auth');
+                    await signOut();
                     setProfile(GUEST_PROFILE);
+                    setCurrentScreen('login');
                   }
                 }}
                 className="px-2.5 py-1.5 rounded-xl font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer flex items-center gap-1"
@@ -275,7 +327,7 @@ export default function App() {
               </button>
             ) : (
               <button
-                onClick={() => setShowLoginModal(true)}
+                onClick={() => setCurrentScreen('login')}
                 className="px-2.5 py-1.5 rounded-xl font-bold bg-orange-50 text-orange-600 hover:bg-orange-100 transition-all cursor-pointer flex items-center gap-1"
               >
                 <LogIn className="w-3.5 h-3.5" />
@@ -302,13 +354,23 @@ export default function App() {
 
       {/* Main Responsive App Container */}
       <main className="w-full max-w-2xl mx-auto flex-1 bg-[#faf8f5] shadow-xl sm:my-4 sm:rounded-3xl sm:border border-slate-200/80 overflow-hidden flex flex-col relative min-h-[85vh]">
+        {currentScreen === 'login' && (
+          <LoginPage
+            onLogin={(newProfile) => {
+              setProfile(newProfile);
+              syncStudentProfileToDB(newProfile);
+              setCurrentScreen('dashboard');
+            }}
+          />
+        )}
+
         {currentScreen === 'dashboard' && (
           <HomeDashboard
             onNavigate={setCurrentScreen}
             onSelectScenario={(sc) => setActiveScenario(sc)}
             profile={profile}
             onUpdateProfile={handleUpdateProfile}
-            onOpenLogin={() => setShowLoginModal(true)}
+            onOpenLogin={() => setCurrentScreen('login')}
             submissions={submissions}
           />
         )}
@@ -431,22 +493,6 @@ export default function App() {
           </form>
         </div>
       )}
-
-      {/* Student Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLogin={(newProfile) => {
-          setProfile(newProfile);
-          syncStudentProfileToDB(newProfile);
-          setShowLoginModal(false);
-        }}
-        onContinueAsGuest={() => {
-          setProfile(GUEST_PROFILE);
-          setShowLoginModal(false);
-        }}
-        currentProfile={profile}
-      />
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-500">

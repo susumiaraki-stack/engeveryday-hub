@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Sparkles,
   Mic,
+  Lock,
 } from 'lucide-react';
 import type { ScreenName, VoiceSubmission, UserProfile } from '../types';
 
@@ -24,15 +25,16 @@ export const StudentFeedbackView: React.FC<StudentFeedbackViewProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'reviewed' | 'pending'>('all');
 
-  // Filter submissions by current student if logged in, or show all if guest/name matches
-  const studentSubmissions = submissions.filter((sub) => {
-    if (!profile.isLoggedIn) return true;
-    return (
-      sub.studentName.toLowerCase() === profile.name.toLowerCase() ||
-      sub.studentNo === profile.grade ||
-      sub.studentNo === profile.studentNumber
-    );
-  });
+  // Filter submissions by current student if logged in, block guests entirely
+  const studentSubmissions = profile.isLoggedIn
+    ? submissions.filter((sub) => {
+        return (
+          sub.studentName.toLowerCase() === profile.name.toLowerCase() ||
+          sub.studentNo === profile.grade ||
+          sub.studentNo === profile.studentNumber
+        );
+      })
+    : [];
 
   const reviewedCount = studentSubmissions.filter(
     (s) => (s.fluencyScore || 0) > 0 || (s.appropriatenessScore || 0) > 0
@@ -127,7 +129,23 @@ export const StudentFeedbackView: React.FC<StudentFeedbackViewProps> = ({
         </div>
 
         {/* Submissions List */}
-        {filtered.length === 0 ? (
+        {!profile.isLoggedIn ? (
+          <div className="p-8 bg-white border border-slate-200/80 rounded-3xl text-center space-y-3 shadow-2xs">
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center mx-auto text-2xl border border-slate-100">
+              <Lock className="w-6 h-6 text-slate-400" />
+            </div>
+            <h4 className="font-bold text-slate-800 text-sm">ส่วนนี้สำหรับนักเรียนที่เข้าสู่ระบบ</h4>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+              กรุณาเข้าสู่ระบบด้วยข้อมูลนักเรียนเพื่อดูผลการตรวจและคำติชมจากคุณครูแบบส่วนตัว
+            </p>
+            <button
+              onClick={() => onNavigate('login')}
+              className="px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold shadow-sm hover:bg-orange-600 cursor-pointer inline-flex items-center gap-1.5"
+            >
+              ไปหน้าเข้าสู่ระบบ
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="p-8 bg-white border border-slate-200/80 rounded-3xl text-center space-y-3 shadow-2xs">
             <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center mx-auto text-2xl">
               🎙️
