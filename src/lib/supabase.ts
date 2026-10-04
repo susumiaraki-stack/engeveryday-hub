@@ -1,17 +1,14 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { VoiceSubmission, CarAssessmentRecord, UserProfile, LeaderboardUser } from '../types';
 
-// Read from env vars or localStorage config
+// Read strictly from env vars
 export const getSupabaseConfig = () => {
   const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
   const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-  const localUrl = typeof window !== 'undefined' ? localStorage.getItem('supabase_url') || '' : '';
-  const localKey = typeof window !== 'undefined' ? localStorage.getItem('supabase_anon_key') || '' : '';
-
   return {
-    url: localUrl || envUrl,
-    key: localKey || envKey,
+    url: envUrl,
+    key: envKey,
   };
 };
 
