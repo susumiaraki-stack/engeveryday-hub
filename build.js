@@ -1,21 +1,25 @@
 import fs from 'fs';
 import path from 'path';
 
-const distDir = 'dist';
-if (!fs.existsSync(distDir)) {
-  fs.mkdirSync(distDir, { recursive: true });
+// Clean and create dist directory
+if (fs.existsSync('dist')) {
+  fs.rmSync('dist', { recursive: true, force: true });
 }
+fs.mkdirSync('dist', { recursive: true });
 
+// Files to copy
 const files = ['index.html', 'admin.html', 'manifest.json', 'sw.js'];
-files.forEach((file) => {
+for (const file of files) {
   if (fs.existsSync(file)) {
-    fs.copyFileSync(file, path.join(distDir, file));
-    console.log(`Copied ${file} -> ${distDir}/${file}`);
+    fs.copyFileSync(file, path.join('dist', file));
+    console.log(`Copied ${file} -> dist/${file}`);
   }
-});
-
-if (fs.existsSync('public')) {
-  fs.cpSync('public', distDir, { recursive: true });
 }
 
-console.log('Build completed: all files ready in dist/');
+// Copy public directory if exists
+if (fs.existsSync('public')) {
+  fs.cpSync('public', 'dist', { recursive: true });
+  console.log('Copied public/ -> dist/');
+}
+
+console.log('✅ Static build complete!');

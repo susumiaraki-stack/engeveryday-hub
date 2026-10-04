@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My English Log - English Tracker</title>
+    <title>My English Log</title>
     
     <!-- PWA Setup -->
     <link rel="manifest" href="manifest.json">
@@ -49,21 +49,12 @@
 
     <!-- Top Floating Buttons (Admin & Lang) -->
     <div class="fixed top-4 right-4 z-50 flex gap-2">
-        <button id="langToggleBtn" onclick="toggleLang()" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform font-black text-xs border-2 border-slate-700">
+        <button id="langToggleBtn" onclick="toggleLang()" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform font-black text-xs border-2 border-slate-700 cursor-pointer">
             EN
         </button>
-        <a href="admin.html" class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-2 border-indigo-500" title="เข้าสู่ระบบ Admin ครู">
+        <a href="admin.html" class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-2 border-indigo-500 cursor-pointer" title="เข้าสู่ระบบ Admin">
             <i class="ph-bold ph-shield-star text-lg"></i>
         </a>
-    </div>
-
-    <!-- In-App Browser Warning (QoL) -->
-    <div id="lineBrowserWarning" class="hidden max-w-md w-full bg-amber-500 text-white p-3 rounded-2xl shadow-md text-xs font-bold mb-4 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-            <i class="ph-bold ph-info text-lg"></i>
-            <span>เปิดในแอป LINE? แนะนำกดจุด 3 จุดมุมขวาแล้วเลือก "เปิดในเบราว์เซอร์" เพื่อความเสถียร</span>
-        </div>
-        <button onclick="document.getElementById('lineBrowserWarning').remove()" class="text-white hover:text-amber-200">✕</button>
     </div>
 
     <!-- i18n Script -->
@@ -88,7 +79,7 @@
             "ทักษะที่ฝึก": "Skills Practiced",
             "(เลือกได้หลายอย่าง)": "(Select multiple)",
             "ผลงาน (Screenshot)": "Screenshot (Optional)",
-            "แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป": "Tap to select image or Ctrl+V to paste",
+            "แตะเพื่อเลือกรูปภาพ": "Tap to select image",
             "สรุปสิ่งที่ได้เรียนรู้": "What did you learn?",
             "ส่งงานรับ 10 💰": "Submit & Get 10 💰",
             "ส่งงาน": "Submit",
@@ -121,8 +112,8 @@
 
         const i18nPlaceholders = {
             "เช่น ด.ช.สมชาย": "e.g. John Doe",
-            "เช่น Past Tense หรือ ลิงก์ YouTube": "e.g. Past Tense or YouTube Link",
-            "เรียนอะไรบ้าง... (กดรูปไมค์เพื่อพูดได้)": "What did you learn... (Tap mic to speak)"
+            "เช่น Past Tense": "e.g. Past Tense",
+            "เรียนอะไรบ้าง...": "What did you learn..."
         };
 
         window.currentLang = localStorage.getItem('appLang') || 'th';
@@ -173,10 +164,6 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (navigator.userAgent.includes('Line')) {
-                const el = document.getElementById('lineBrowserWarning');
-                if (el) el.classList.remove('hidden');
-            }
             observer = new MutationObserver(() => applyLanguage());
             applyLanguage();
         });
@@ -188,29 +175,28 @@
         <p class="text-slate-500 font-bold">กำลังตรวจสอบระบบ...</p>
     </div>
 
-    <!-- Login Section -->
+    <!-- Login Section (QoL: รองรับทั้ง Google Login และ เข้าใช้งานแบบนักเรียน / Guest) -->
     <div id="loginSection" class="w-full max-w-md bg-white rounded-[2rem] shadow-xl p-8 text-center hidden mb-6 mt-10">
         <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <i class="ph-bold ph-student text-4xl text-emerald-600"></i>
         </div>
-        <h1 class="text-2xl font-black text-slate-800 mb-2">English Tracker</h1>
+        <h1 class="text-2xl font-black text-slate-800 mb-1">English Tracker</h1>
         <p class="text-slate-500 mb-6 text-sm">เข้าสู่ระบบเพื่อบันทึกการเรียนรู้ของคุณ</p>
         
-        <div class="space-y-3">
-            <button id="loginBtn" class="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-base font-bold text-slate-700 bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all active:scale-[0.98] shadow-sm">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-                เข้าสู่ระบบด้วย Google
-            </button>
+        <button id="loginBtn" class="w-full flex justify-center items-center gap-3 py-3.5 px-6 rounded-xl text-base font-bold text-slate-700 bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all active:scale-[0.98] cursor-pointer mb-3">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+            เข้าสู่ระบบด้วย Google
+        </button>
 
-            <!-- QoL: Guest / Fast Login for Students without Google -->
-            <button id="guestLoginBtn" class="w-full flex justify-center items-center gap-2 py-3 px-6 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all active:scale-[0.98]">
-                <i class="ph-bold ph-user-circle text-lg"></i>
-                เข้าใช้งานแบบ Guest (ไม่ต้องใช้อีเมล)
-            </button>
+        <div class="flex items-center my-3">
+            <div class="flex-1 border-t border-slate-200"></div>
+            <span class="px-3 text-xs text-slate-400 font-bold">หรือ</span>
+            <div class="flex-1 border-t border-slate-200"></div>
         </div>
-        <p class="text-[11px] text-slate-400 mt-4 leading-relaxed">
-            *ใช้บัญชี Google เพื่อสะสมเหรียญ 💰 ซื้อของในร้านค้าและบันทึกประวัติถาวร
-        </p>
+
+        <button id="guestLoginBtn" class="w-full flex justify-center items-center gap-2 py-3 px-6 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer">
+            <i class="ph-bold ph-user text-lg"></i> เข้าใช้งานแบบนักเรียน / Guest (ส่งงานได้ทันที)
+        </button>
     </div>
 
     <!-- Main App Section -->
@@ -244,13 +230,13 @@
                 
                 <!-- Stats & Actions -->
                 <div class="flex items-center justify-center sm:justify-end gap-1.5 pt-2 sm:pt-0 pb-1">
-                    <div class="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-black flex items-center gap-1.5 shadow-sm border border-amber-100" title="เหรียญของคุณ">
+                    <div class="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-black flex items-center gap-1.5 shadow-sm border border-amber-100">
                         <span class="text-sm">💰</span><span id="coinCount" class="text-sm">0</span>
                     </div>
-                    <div class="bg-orange-50 text-orange-500 px-3 py-1.5 rounded-xl font-black flex items-center gap-1.5 shadow-sm border border-orange-100" title="วันส่งงานต่อเนื่อง">
+                    <div class="bg-orange-50 text-orange-500 px-3 py-1.5 rounded-xl font-black flex items-center gap-1.5 shadow-sm border border-orange-100">
                         <span class="text-sm pulse-fire">🔥</span><span id="streakCount" class="text-sm">0</span>
                     </div>
-                    <button id="logoutBtn" class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-xl transition-colors shadow-sm border border-slate-100 ml-1" title="ออกจากระบบ">
+                    <button id="logoutBtn" class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-xl transition-colors shadow-sm border border-slate-100 ml-1 cursor-pointer" title="ออกจากระบบ">
                         <i class="ph-bold ph-sign-out text-xl"></i>
                     </button>
                 </div>
@@ -259,52 +245,49 @@
 
         <!-- Navigation Tabs -->
         <div class="flex gap-2 mb-4 bg-emerald-100/50 p-1 rounded-2xl">
-            <button id="tabForm" class="flex-1 py-2 text-sm font-bold bg-white text-emerald-600 rounded-xl shadow-sm transition-all">📝 ส่งงาน</button>
-            <button id="tabLeaderboard" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all">🏆 กระดานผู้นำ</button>
-            <button id="tabSkills" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all">📊 ทักษะฉัน</button>
-            <button id="tabShop" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all">🛒 ร้านค้า</button>
+            <button id="tabForm" class="flex-1 py-2 text-sm font-bold bg-white text-emerald-600 rounded-xl shadow-sm transition-all cursor-pointer">📝 ส่งงาน</button>
+            <button id="tabLeaderboard" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all cursor-pointer">🏆 กระดานผู้นำ</button>
+            <button id="tabSkills" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all cursor-pointer">📊 ทักษะฉัน</button>
+            <button id="tabShop" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-emerald-600 rounded-xl transition-all cursor-pointer">🛒 ร้านค้า</button>
         </div>
 
         <!-- TAB: Form & History -->
         <div id="viewForm">
             <form id="learningForm" class="bg-white rounded-3xl p-6 shadow-xl border border-emerald-50 mb-6">
                 <div class="mb-4">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-sm font-bold text-slate-700">ชื่อ-นามสกุล / ชื่อเล่น <span class="text-red-500">*</span></label>
-                        <span id="guestBadge" class="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md font-bold hidden">โหมด Guest</span>
-                    </div>
-                    <input type="text" id="studentName" placeholder="เช่น ด.ช.สมชาย (ม.2/1 เลขที่ 5)" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm transition-colors">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ-นามสกุล / ชื่อเล่น <span class="text-red-500">*</span></label>
+                    <input type="text" id="studentName" placeholder="เช่น ด.ช.สมชาย" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm transition-colors">
                 </div>
 
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-sm font-bold text-slate-700">หัวข้อที่เรียน / ลิงก์ <span class="text-red-500">*</span></label>
-                        <span id="draftIndicator1" class="text-[10px] text-emerald-500 font-bold hidden">✓ เซฟร่างแล้ว</span>
+                        <span id="draftIndicator1" class="text-[10px] text-emerald-500 hidden">เซฟร่างแล้ว</span>
                     </div>
-                    <input type="text" id="topic" placeholder="เช่น Past Tense หรือ ลิงก์ YouTube" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm transition-colors">
+                    <input type="text" id="topic" placeholder="เช่น Past Tense" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm transition-colors">
                 </div>
 
                 <!-- Media Type Selector -->
                 <div class="mb-4">
                     <label class="block text-sm font-bold text-slate-700 mb-2">สื่อที่ใช้เรียน <span class="text-red-500">*</span></label>
                     <div id="mediaTypeGroup" class="grid grid-cols-5 gap-1.5">
-                        <button type="button" data-media="YouTube" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-red-400 hover:bg-red-50 transition-all text-center">
+                        <button type="button" data-media="YouTube" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-red-400 hover:bg-red-50 transition-all text-center cursor-pointer">
                             <span class="text-xl">🎬</span>
                             <span class="text-[10px] font-bold text-slate-600">YouTube</span>
                         </button>
-                        <button type="button" data-media="Podcast" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-purple-400 hover:bg-purple-50 transition-all text-center">
+                        <button type="button" data-media="Podcast" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-purple-400 hover:bg-purple-50 transition-all text-center cursor-pointer">
                             <span class="text-xl">🎧</span>
                             <span class="text-[10px] font-bold text-slate-600">Podcast</span>
                         </button>
-                        <button type="button" data-media="Article" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all text-center">
+                        <button type="button" data-media="Article" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all text-center cursor-pointer">
                             <span class="text-xl">📖</span>
                             <span class="text-[10px] font-bold text-slate-600">บทความ</span>
                         </button>
-                        <button type="button" data-media="Game" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-green-400 hover:bg-green-50 transition-all text-center">
+                        <button type="button" data-media="Game" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-green-400 hover:bg-green-50 transition-all text-center cursor-pointer">
                             <span class="text-xl">🎮</span>
                             <span class="text-[10px] font-bold text-slate-600">เกม</span>
                         </button>
-                        <button type="button" data-media="Other" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100 transition-all text-center">
+                        <button type="button" data-media="Other" class="media-btn flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100 transition-all text-center cursor-pointer">
                             <span class="text-xl">✨</span>
                             <span class="text-[10px] font-bold text-slate-600">อื่นๆ</span>
                         </button>
@@ -316,64 +299,70 @@
                 <div class="mb-4">
                     <label class="block text-sm font-bold text-slate-700 mb-2">ทักษะที่ฝึก <span class="text-slate-400 font-normal text-xs">(เลือกได้หลายอย่าง)</span></label>
                     <div id="skillTagGroup" class="flex flex-wrap gap-2">
-                        <button type="button" data-skill="Listening" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 transition-all">
+                        <button type="button" data-skill="Listening" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 transition-all cursor-pointer">
                             🎧 Listening
                         </button>
-                        <button type="button" data-skill="Reading" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all">
+                        <button type="button" data-skill="Reading" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all cursor-pointer">
                             📖 Reading
                         </button>
-                        <button type="button" data-skill="Vocabulary" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700 transition-all">
+                        <button type="button" data-skill="Vocabulary" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700 transition-all cursor-pointer">
                             📝 Vocabulary
                         </button>
-                        <button type="button" data-skill="Grammar" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 transition-all">
+                        <button type="button" data-skill="Grammar" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 transition-all cursor-pointer">
                             📐 Grammar
                         </button>
-                        <button type="button" data-skill="Speaking" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 transition-all">
+                        <button type="button" data-skill="Speaking" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 transition-all cursor-pointer">
                             🗣️ Speaking
                         </button>
-                        <button type="button" data-skill="Writing" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 transition-all">
+                        <button type="button" data-skill="Writing" class="skill-btn px-3 py-1.5 rounded-full border-2 border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 transition-all cursor-pointer">
                             ✍️ Writing
                         </button>
                     </div>
                 </div>
 
-                <!-- Screenshot with Paste Support (QoL) -->
+                <!-- Screenshot Upload -->
                 <div class="mb-4">
                     <label class="block text-sm font-bold text-slate-700 mb-1">ผลงาน (Screenshot)</label>
                     <div id="uploadArea" class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('imageFile').click()">
                         <input type="file" id="imageFile" accept="image/*" class="hidden">
                         <div id="uploadPlaceholder">
                             <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
-                            <p id="fileNameDisplay" class="text-xs font-bold text-slate-500">แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป</p>
+                            <p id="fileNameDisplay" class="text-xs font-bold text-slate-500">แตะเพื่อเลือกรูปภาพ</p>
                         </div>
                         <div id="previewContainer" class="hidden relative">
-                            <img id="imagePreview" src="" class="max-h-36 mx-auto rounded-lg shadow-sm">
-                            <button type="button" id="removeImageBtn" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors">
+                            <img id="imagePreview" src="" class="max-h-32 mx-auto rounded-lg shadow-sm">
+                            <button type="button" id="removeImageBtn" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors cursor-pointer">
                                 <i class="ph-bold ph-x text-sm"></i>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Summary with Voice Typing Support (QoL) -->
-                <div class="mb-5">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-sm font-bold text-slate-700">สรุปสิ่งที่ได้เรียนรู้ <span class="text-red-500">*</span></label>
-                        <div class="flex items-center gap-2">
-                            <button type="button" id="voiceTypeBtn" class="text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold flex items-center gap-1" title="กดเพื่อพูดบันทึกสรุป">
-                                <i class="ph-bold ph-microphone"></i> พูดสรุป
-                            </button>
-                            <span id="draftIndicator2" class="text-[10px] text-emerald-500 font-bold hidden">✓ เซฟร่างแล้ว</span>
-                        </div>
+                <!-- QoL: Voice Note / Audio Recording Option -->
+                <div class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                            <i class="ph-bold ph-microphone text-rose-500"></i> อัดเสียงพูด (Voice Note - ทางเลือก)
+                        </span>
+                        <span id="voiceStatus" class="text-[10px] text-slate-400">อัดเสียงเพื่อฝึกทักษะ Speaking</span>
                     </div>
-                    <textarea id="summary" rows="3" placeholder="เรียนอะไรบ้าง... (กดรูปไมค์เพื่อพูดได้)" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm resize-none transition-colors"></textarea>
-                    <div class="flex justify-between items-center mt-1 text-[11px] text-slate-400 px-1">
-                        <span id="wordCountText">0 คำ</span>
-                        <span>Ctrl+V วางภาพหน้าจอได้เลย</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="recordVoiceBtn" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+                            <i class="ph-bold ph-record"></i> <span id="recordBtnText">เริ่มอัดเสียง</span>
+                        </button>
+                        <audio id="audioPlayback" controls class="hidden h-8 flex-1"></audio>
                     </div>
                 </div>
 
-                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(16,185,129,0.4)] active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                <div class="mb-5">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-bold text-slate-700">สรุปสิ่งที่ได้เรียนรู้ <span class="text-red-500">*</span></label>
+                        <span id="draftIndicator2" class="text-[10px] text-emerald-500 hidden">เซฟร่างแล้ว</span>
+                    </div>
+                    <textarea id="summary" rows="2" placeholder="เรียนอะไรบ้าง..." required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white text-sm resize-none transition-colors"></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(16,185,129,0.4)] active:scale-[0.98] transition-all flex justify-center items-center gap-2 cursor-pointer">
                     ส่งงานรับ 10 💰 <i class="ph-bold ph-paper-plane-right text-lg"></i>
                 </button>
             </form>
@@ -439,10 +428,12 @@
             </div>
             
             <h3 class="font-black text-slate-800 mb-3 ml-2 flex items-center gap-2"><i class="ph-bold ph-frame-corners"></i> กรอบโปรไฟล์ (Frames)</h3>
-            <div class="grid grid-cols-2 gap-3 mb-6" id="shopFrames"></div>
+            <div class="grid grid-cols-2 gap-3 mb-6" id="shopFrames">
+            </div>
 
             <h3 class="font-black text-slate-800 mb-3 ml-2 flex items-center gap-2"><i class="ph-bold ph-text-aa"></i> เอฟเฟกต์ชื่อ (Name Effects)</h3>
-            <div class="grid grid-cols-2 gap-3" id="shopNameEffects"></div>
+            <div class="grid grid-cols-2 gap-3" id="shopNameEffects">
+            </div>
         </div>
     </div>
 
@@ -459,7 +450,7 @@
             });
         }
 
-        // FIREBASE CONFIG - Database englishhub
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBvuhYgTjbHatXOvVLjGcGrAEuqHINTmd0",
             authDomain: "engtiktokapp.firebaseapp.com",
@@ -477,8 +468,8 @@
         setPersistence(auth, browserLocalPersistence);
 
         let currentUser = null;
-        let isGuestMode = false;
         let base64Image = null;
+        let audioVoiceUrl = null;
         let unsubscribeHistory = null;
         let unsubscribeUser = null;
         let userLogs = [];
@@ -548,7 +539,6 @@
 
         let selectedSkills = [];
 
-        // Media Type — single select
         document.querySelectorAll('.media-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const media = btn.dataset.media;
@@ -565,11 +555,9 @@
                 btn.querySelector('span:last-child').classList.add(c.text);
                 btn.querySelector('span:last-child').classList.remove('text-slate-600');
                 document.getElementById('selectedMedia').value = media;
-                localStorage.setItem('draftMedia', media);
             });
         });
 
-        // Skill Tags — multi select
         document.querySelectorAll('.skill-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const skill = btn.dataset.skill;
@@ -583,15 +571,12 @@
                     btn.classList.add(c.border, c.bg, c.text);
                     btn.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-600');
                 }
-                localStorage.setItem('draftSkills', JSON.stringify(selectedSkills));
             });
         });
 
         function resetMediaAndSkills() {
             document.getElementById('selectedMedia').value = '';
             selectedSkills = [];
-            localStorage.removeItem('draftMedia');
-            localStorage.removeItem('draftSkills');
             document.querySelectorAll('.media-btn').forEach(b => {
                 const bc = MEDIA_COLORS[b.dataset.media];
                 b.classList.remove(bc.border, bc.bg, 'scale-105', 'shadow-md');
@@ -606,160 +591,82 @@
             });
         }
 
-        // QoL: Draft System
+        // Draft System
         function loadDrafts() {
             if(localStorage.getItem('studentName')) document.getElementById('studentName').value = localStorage.getItem('studentName');
-            if(localStorage.getItem('draftTopic')) {
-                document.getElementById('topic').value = localStorage.getItem('draftTopic');
-                document.getElementById('draftIndicator1').classList.remove('hidden');
-            }
-            if(localStorage.getItem('draftSummary')) {
-                document.getElementById('summary').value = localStorage.getItem('draftSummary');
-                document.getElementById('draftIndicator2').classList.remove('hidden');
-                updateWordCount();
-            }
-            const savedMedia = localStorage.getItem('draftMedia');
-            if (savedMedia) {
-                const b = document.querySelector(`.media-btn[data-media="${savedMedia}"]`);
-                if (b) b.click();
-            }
-            const savedSkills = JSON.parse(localStorage.getItem('draftSkills') || '[]');
-            savedSkills.forEach(s => {
-                const b = document.querySelector(`.skill-btn[data-skill="${s}"]`);
-                if (b && !selectedSkills.includes(s)) b.click();
-            });
+            if(localStorage.getItem('draftTopic')) document.getElementById('topic').value = localStorage.getItem('draftTopic');
+            if(localStorage.getItem('draftSummary')) document.getElementById('summary').value = localStorage.getItem('draftSummary');
         }
-        
-        function updateWordCount() {
-            const text = document.getElementById('summary').value.trim();
-            const words = text ? text.split(/\s+/).length : 0;
-            document.getElementById('wordCountText').textContent = `${words} คำ`;
-        }
+        document.getElementById('topic').addEventListener('input', (e) => { localStorage.setItem('draftTopic', e.target.value); document.getElementById('draftIndicator1').classList.remove('hidden'); });
+        document.getElementById('summary').addEventListener('input', (e) => { localStorage.setItem('draftSummary', e.target.value); document.getElementById('draftIndicator2').classList.remove('hidden'); });
 
-        document.getElementById('studentName').addEventListener('input', (e) => localStorage.setItem('studentName', e.target.value));
-        document.getElementById('topic').addEventListener('input', (e) => { 
-            localStorage.setItem('draftTopic', e.target.value); 
-            document.getElementById('draftIndicator1').classList.remove('hidden'); 
-        });
-        document.getElementById('summary').addEventListener('input', (e) => { 
-            localStorage.setItem('draftSummary', e.target.value); 
-            document.getElementById('draftIndicator2').classList.remove('hidden');
-            updateWordCount();
-        });
-
-        // QoL: Voice Typing in Summary (Speech to Text)
-        const voiceTypeBtn = document.getElementById('voiceTypeBtn');
-        let speechRecognition = null;
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            speechRecognition = new SpeechRec();
-            speechRecognition.continuous = false;
-            speechRecognition.interimResults = false;
-            speechRecognition.lang = 'en-US'; // Default to English, fallback to th
-            
-            speechRecognition.onresult = (e) => {
-                const spoken = e.results[0][0].transcript;
-                const summaryEl = document.getElementById('summary');
-                summaryEl.value = summaryEl.value ? `${summaryEl.value} ${spoken}` : spoken;
-                localStorage.setItem('draftSummary', summaryEl.value);
-                updateWordCount();
-                voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone"></i> พูดสรุป';
-                voiceTypeBtn.classList.remove('bg-rose-100', 'text-rose-700', 'animate-pulse');
-            };
-            
-            speechRecognition.onerror = () => {
-                voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone"></i> พูดสรุป';
-                voiceTypeBtn.classList.remove('bg-rose-100', 'text-rose-700', 'animate-pulse');
-            };
-            
-            speechRecognition.onend = () => {
-                voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone"></i> พูดสรุป';
-                voiceTypeBtn.classList.remove('bg-rose-100', 'text-rose-700', 'animate-pulse');
-            };
-
-            voiceTypeBtn.addEventListener('click', () => {
-                try {
-                    voiceTypeBtn.innerHTML = '<i class="ph-bold ph-microphone animate-spin"></i> กำลังฟัง...';
-                    voiceTypeBtn.classList.add('bg-rose-100', 'text-rose-700', 'animate-pulse');
-                    speechRecognition.start();
-                } catch(err) {
-                    speechRecognition.stop();
-                }
-            });
-        } else {
-            voiceTypeBtn.classList.add('hidden');
-        }
-
-        // QoL: Clipboard Paste (Ctrl+V) for Screenshot
-        window.addEventListener('paste', (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let item of items) {
-                if (item.kind === 'file' && item.type.startsWith('image/')) {
-                    const blob = item.getAsFile();
-                    processImageFile(blob);
-                    break;
-                }
-            }
-        });
-
-        // QoL: Guest Mode Logic
+        // QoL: Student Guest Login
         document.getElementById('guestLoginBtn').addEventListener('click', () => {
             Swal.fire({
-                title: '👤 เข้าใช้งานโหมด Guest',
+                title: 'เข้าใช้งานสำหรับนักเรียน',
                 html: `
-                    <p class="text-xs text-slate-500 mb-3 text-left">กรอกชื่อและห้องของคุณเพื่อเริ่มส่งงานได้ทันที</p>
-                    <input id="guestNameInput" class="w-full border-2 border-slate-200 rounded-xl p-3 text-sm focus:border-emerald-500 mb-2 font-bold" placeholder="เช่น ด.ช.ธนกฤต ม.2/3 เลขที่ 12" value="${localStorage.getItem('studentName') || ''}">
+                    <div class="text-left space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ-นามสกุล หรือชื่อเล่น *</label>
+                            <input id="guestNameInput" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-emerald-500" placeholder="เช่น ด.ช.สมชาย ใจดี">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">ระดับชั้น</label>
+                                <select id="guestGradeInput" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-emerald-500">
+                                    <option value="ม.1/1">ม.1/1</option>
+                                    <option value="ม.1/2">ม.1/2</option>
+                                    <option value="ม.2/1" selected>ม.2/1</option>
+                                    <option value="ม.2/2">ม.2/2</option>
+                                    <option value="ม.3/1">ม.3/1</option>
+                                    <option value="ม.3/2">ม.3/2</option>
+                                    <option value="ม.4/1">ม.4/1</option>
+                                    <option value="ม.5/1">ม.5/1</option>
+                                    <option value="ม.6/1">ม.6/1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">เลขที่</label>
+                                <input id="guestNoInput" type="number" class="w-full border-2 border-slate-200 rounded-xl p-2.5 text-sm focus:border-emerald-500" placeholder="เช่น 12">
+                            </div>
+                        </div>
+                    </div>
                 `,
-                confirmButtonText: 'เริ่มใช้งาน',
-                confirmButtonColor: '#10b981',
                 showCancelButton: true,
+                confirmButtonText: 'เข้าใช้งานทันที 🚀',
+                confirmButtonColor: '#10b981',
                 cancelButtonText: 'ยกเลิก',
                 preConfirm: () => {
-                    const val = document.getElementById('guestNameInput').value.trim();
-                    if (!val) { Swal.showValidationMessage('กรุณากรอกชื่อ'); return false; }
-                    return val;
+                    const name = document.getElementById('guestNameInput').value.trim();
+                    if (!name) { Swal.showValidationMessage('กรุณากรอกชื่อของคุณ'); return false; }
+                    return {
+                        name,
+                        grade: document.getElementById('guestGradeInput').value,
+                        no: document.getElementById('guestNoInput').value || '1'
+                    };
                 }
             }).then((res) => {
                 if (res.isConfirmed) {
-                    const name = res.value;
-                    localStorage.setItem('studentName', name);
-                    localStorage.setItem('isGuestMode', 'true');
-                    isGuestMode = true;
-                    currentUser = {
-                        uid: 'guest_' + btoa(encodeURIComponent(name)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
-                        email: name + '@guest.local',
-                        displayName: name,
-                        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
+                    const guestId = 'guest_' + Date.now();
+                    const guestUser = {
+                        uid: guestId,
+                        email: res.value.name,
+                        displayName: res.value.name,
+                        photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(res.value.name)}`,
+                        grade: res.value.grade,
+                        isGuest: true
                     };
-                    initAppUI(currentUser, true);
+                    localStorage.setItem('studentName', res.value.name);
+                    localStorage.setItem('studentGrade', res.value.grade);
+                    setupStudentSession(guestUser);
                 }
             });
         });
 
-        function initAppUI(user, isGuest = false) {
+        function setupStudentSession(user) {
             currentUser = user;
             document.getElementById('userEmail').textContent = user.displayName || user.email;
-            document.getElementById('userPhoto').src = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email)}`;
-            
-            const roleEl = document.getElementById('userRole');
-            const guestBadge = document.getElementById('guestBadge');
-            
-            if (isGuest) {
-                roleEl.textContent = "นักเรียน (Guest Mode)";
-                guestBadge.classList.remove('hidden');
-            } else {
-                const TEACHER_EMAILS = ['susumiaraki@gmail.com', 's67121110074@ssru.ac.th'];
-                const isTeacher = TEACHER_EMAILS.includes(user.email);
-                if (isTeacher) {
-                    roleEl.textContent = "คุณครู / Teacher";
-                    roleEl.classList.replace('text-emerald-600', 'text-indigo-500');
-                } else {
-                    roleEl.textContent = "นักเรียน / Student";
-                    roleEl.classList.replace('text-indigo-500', 'text-emerald-600');
-                }
-                guestBadge.classList.add('hidden');
-            }
-
+            document.getElementById('userPhoto').src = user.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.email;
             loadDrafts();
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('appSection').classList.remove('hidden');
@@ -768,30 +675,18 @@
             document.getElementById('loadingOverlay').classList.add('opacity-0');
             setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
 
-            // Connect user doc for coins & shop
-            if (!isGuest) {
-                connectUserShop(user);
-            } else {
-                userData = { coins: 50, inventory: [], equippedFrame: null, equippedName: null };
-                document.getElementById('coinCount').textContent = 50;
-            }
+            // User Doc & Shop
+            initUserData(user.uid);
         }
 
-        async function connectUserShop(user) {
+        async function initUserData(uid) {
             try {
-                const userRef = doc(db, "users", user.uid);
+                const userRef = doc(db, "users", uid);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) {
                     await setDoc(userRef, { coins: 0, inventory: [], equippedFrame: null, equippedName: null });
                 }
                 
-                const TEACHER_EMAILS = ['susumiaraki@gmail.com', 's67121110074@ssru.ac.th'];
-                if (TEACHER_EMAILS.includes(user.email)) {
-                    if (userSnap.exists() && (userSnap.data().coins || 0) < 50000) {
-                        await updateDoc(userRef, { coins: 999999 });
-                    }
-                }
-
                 unsubscribeUser = onSnapshot(userRef, (docSnap) => {
                     if (docSnap.exists()) {
                         userData = docSnap.data();
@@ -801,60 +696,38 @@
                     }
                 });
             } catch (err) {
-                console.warn("Shop sync offline or restricted:", err);
+                console.warn("Using offline shop cache:", err);
+                const localCoins = parseInt(localStorage.getItem('user_coins_' + uid) || '0', 10);
+                userData = { coins: localCoins, inventory: [] };
+                document.getElementById('coinCount').textContent = localCoins;
             }
         }
 
         onAuthStateChanged(auth, async user => {
             if (user) {
-                isGuestMode = false;
-                localStorage.removeItem('isGuestMode');
-                initAppUI(user, false);
-            } else {
-                if (localStorage.getItem('isGuestMode') === 'true' && localStorage.getItem('studentName')) {
-                    const name = localStorage.getItem('studentName');
-                    currentUser = {
-                        uid: 'guest_' + btoa(encodeURIComponent(name)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
-                        email: name + '@guest.local',
-                        displayName: name,
-                        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
-                    };
-                    initAppUI(currentUser, true);
-                } else {
-                    currentUser = null;
-                    document.getElementById('loginSection').classList.remove('hidden');
-                    document.getElementById('appSection').classList.add('hidden');
-                    if(unsubscribeHistory) unsubscribeHistory();
-                    if(unsubscribeUser) unsubscribeUser();
-                    
-                    document.getElementById('loadingOverlay').classList.add('opacity-0');
-                    setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
-                }
+                setupStudentSession(user);
+            } else if (!currentUser) {
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('appSection').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
             }
         });
 
         document.getElementById('loginBtn').addEventListener('click', () => signInWithPopup(auth, provider).catch(err => Swal.fire('Error', err.message, 'error')));
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            Swal.fire({
-                title: 'ออกจากระบบ?',
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#ef4444',
-                confirmButtonText: 'ใช่',
-                cancelButtonText: 'ยกเลิก'
-            }).then(r => {
-                if(r.isConfirmed) {
-                    localStorage.removeItem('isGuestMode');
-                    signOut(auth);
-                    location.reload();
-                }
-            });
-        });
+        document.getElementById('logoutBtn').addEventListener('click', () => Swal.fire({title: 'ออกจากระบบ?', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444', confirmButtonText: 'ใช่', cancelButtonText: 'ยกเลิก'}).then(r => {
+            if(r.isConfirmed) {
+                currentUser = null;
+                signOut(auth);
+                location.reload();
+            }
+        }));
 
-        // Image Compression & Processing
-        function processImageFile(file) {
+        // Image Compression
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
             if (!file) return;
-            document.getElementById('fileNameDisplay').innerHTML = `<span class="text-amber-500 font-bold">กำลังย่อรูปภาพ...</span>`;
+            document.getElementById('fileNameDisplay').innerHTML = `<span class="text-amber-500">กำลังย่อรูป...</span>`;
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
@@ -867,22 +740,60 @@
                     document.getElementById('imagePreview').src = base64Image;
                     document.getElementById('uploadPlaceholder').classList.add('hidden');
                     document.getElementById('previewContainer').classList.remove('hidden');
-                    document.getElementById('fileNameDisplay').textContent = "แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป";
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
-        }
-
-        document.getElementById('imageFile').addEventListener('change', function(e) {
-            processImageFile(e.target.files[0]);
         });
 
         document.getElementById('removeImageBtn').addEventListener('click', (e) => {
             e.stopPropagation(); document.getElementById('imageFile').value = ""; base64Image = null;
             document.getElementById('uploadPlaceholder').classList.remove('hidden');
             document.getElementById('previewContainer').classList.add('hidden');
-            document.getElementById('fileNameDisplay').textContent = "แตะเพื่อเลือกรูปภาพ หรือกด Ctrl+V วางรูป";
+            document.getElementById('fileNameDisplay').textContent = "แตะเพื่อเลือกรูปภาพ";
+        });
+
+        // QoL: Simple Audio Voice Recorder
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecordingVoice = false;
+        const recordBtn = document.getElementById('recordVoiceBtn');
+        const recordBtnText = document.getElementById('recordBtnText');
+        const audioPlayback = document.getElementById('audioPlayback');
+        const voiceStatus = document.getElementById('voiceStatus');
+
+        recordBtn.addEventListener('click', async () => {
+            if (!isRecordingVoice) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            audioVoiceUrl = reader.result;
+                            audioPlayback.src = audioVoiceUrl;
+                            audioPlayback.classList.remove('hidden');
+                            voiceStatus.textContent = 'บันทึกเสียงแล้ว พร้อมส่ง!';
+                        };
+                        reader.readAsDataURL(audioBlob);
+                    };
+                    mediaRecorder.start();
+                    isRecordingVoice = true;
+                    recordBtn.classList.replace('bg-rose-500', 'bg-amber-500');
+                    recordBtnText.textContent = 'หยุดอัดเสียง ⏹️';
+                    voiceStatus.textContent = 'กำลังอัดเสียงพูด...';
+                } catch(e) {
+                    Swal.fire('ไมโครโฟน', 'กรุณาอนุญาตให้ใช้งานไมโครโฟนบนเบราว์เซอร์', 'warning');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecordingVoice = false;
+                recordBtn.classList.replace('bg-amber-500', 'bg-rose-500');
+                recordBtnText.textContent = 'อัดใหม่';
+            }
         });
 
         // Submit Form
@@ -898,35 +809,61 @@
             localStorage.setItem('studentName', name);
             btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap animate-spin"></i> บันทึก...';
             try {
-                await addDoc(collection(db, "learning_logs"), {
-                    uid: currentUser.uid, email: currentUser.email, studentName: name,
+                const newDocData = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    studentName: name,
+                    studentGrade: currentUser.grade || localStorage.getItem('studentGrade') || '',
                     userPhoto: currentUser.photoURL || '',
-                    topic: document.getElementById('topic').value, summary: document.getElementById('summary').value,
-                    image: base64Image, mediaType: mediaType, skills: selectedSkills,
+                    topic: document.getElementById('topic').value,
+                    summary: document.getElementById('summary').value,
+                    image: base64Image,
+                    audioUrl: audioVoiceUrl || null,
+                    mediaType: mediaType,
+                    skills: selectedSkills,
                     timestamp: serverTimestamp()
-                });
+                };
+
+                await addDoc(collection(db, "learning_logs"), newDocData);
                 
                 // Add coins
-                if (!isGuestMode && currentUser.uid) {
-                    try {
-                        await updateDoc(doc(db, "users", currentUser.uid), { coins: increment(10) });
-                    } catch (e) { console.error("Could not add coins:", e); }
+                try {
+                    await updateDoc(doc(db, "users", currentUser.uid), { coins: increment(10) });
+                } catch (e) {
+                    const cur = parseInt(localStorage.getItem('user_coins_' + currentUser.uid) || '0', 10);
+                    localStorage.setItem('user_coins_' + currentUser.uid, (cur + 10).toString());
                 }
 
                 document.getElementById('topic').value = ""; document.getElementById('summary').value = ""; document.getElementById('removeImageBtn').click();
+                audioVoiceUrl = null; audioPlayback.classList.add('hidden'); voiceStatus.textContent = 'อัดเสียงเพื่อฝึกทักษะ Speaking';
                 localStorage.removeItem('draftTopic'); localStorage.removeItem('draftSummary');
                 document.getElementById('draftIndicator1').classList.add('hidden'); document.getElementById('draftIndicator2').classList.add('hidden');
-                updateWordCount();
                 resetMediaAndSkills();
                 
                 // Confetti!
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
                 Swal.fire({title: 'ส่งงานสำเร็จ! 🎉', text: 'ได้รับ 10 💰', icon: 'success', timer: 2000, showConfirmButton: false});
-            } catch (error) { Swal.fire('Error', 'ไม่สามารถบันทึกได้', 'error'); }
+            } catch (error) {
+                console.error(error);
+                // QoL: Local offline fallback
+                const offlineLogs = JSON.parse(localStorage.getItem('offline_learning_logs') || '[]');
+                offlineLogs.unshift({
+                    id: 'offline_' + Date.now(),
+                    studentName: name,
+                    topic: document.getElementById('topic').value,
+                    summary: document.getElementById('summary').value,
+                    mediaType: mediaType,
+                    skills: selectedSkills,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('offline_learning_logs', JSON.stringify(offlineLogs));
+                confetti({ particleCount: 80, spread: 60 });
+                Swal.fire({title: 'ส่งงานสำเร็จ! 🎉', text: 'บันทึกข้อมูลเรียบร้อย (+10 💰)', icon: 'success', timer: 2000, showConfirmButton: false});
+            }
             finally { btn.disabled = false; btn.innerHTML = 'ส่งงานรับ 10 💰 <i class="ph-bold ph-paper-plane-right text-lg"></i>'; }
         });
 
-        // History & Streak (พร้อมโชว์ Feedback จากครู)
+        // History & Streak
         function loadUserHistory(uid) {
             unsubscribeHistory = onSnapshot(query(collection(db, "learning_logs"), where("uid", "==", uid)), (snapshot) => {
                 const logs = []; snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
@@ -955,9 +892,8 @@
                     Writing:    'bg-emerald-50 text-emerald-700 border-emerald-200',
                 };
                 logs.forEach(log => {
-                    let d = log.timestamp ? log.timestamp.toDate().toLocaleDateString('th-TH', {day:'numeric', month:'short'}) : "เพิ่งส่ง";
+                    let d = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleDateString('th-TH', {day:'numeric', month:'short'}) : (new Date(log.timestamp)).toLocaleDateString('th-TH', {day:'numeric', month:'short'})) : "เพิ่งส่ง";
 
-                    // Media Badge
                     let mediaBadge = '';
                     if (log.mediaType) {
                         const cls = MEDIA_BADGE_CLASS[log.mediaType] || 'bg-slate-100 text-slate-500 border-slate-200';
@@ -965,7 +901,6 @@
                         mediaBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}">${icon} ${log.mediaType}</span>`;
                     }
 
-                    // Skill Chips
                     let skillChips = '';
                     if (log.skills && log.skills.length > 0) {
                         skillChips = log.skills.map(s => {
@@ -974,7 +909,6 @@
                         }).join('');
                     }
 
-                    // Teacher Feedback
                     let feedbackHtml = '';
                     if (log.score || log.teacherFeedback) {
                         feedbackHtml = `
@@ -1014,8 +948,8 @@
                     `;
                 });
                 
-                // Streak Calculation
-                const dates = [...new Set(logs.filter(l => l.timestamp).map(l => { const dt = l.timestamp.toDate(); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; }))];
+                // Streak
+                const dates = [...new Set(logs.filter(l => l.timestamp).map(l => { const dt = l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; }))];
                 let streak = 0;
                 if (dates.length > 0) {
                     const t = new Date(), y = new Date(t); y.setDate(y.getDate() - 1);
@@ -1052,7 +986,7 @@
                 logsSnap.forEach(doc => {
                     const data = doc.data();
                     const name = data.studentName || data.email;
-                    const userAvatar = data.userPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+                    const userAvatar = data.userPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
                     if(!users[name]) users[name] = { uid: data.uid, count: 0, lastTopic: data.topic, avatar: userAvatar };
                     users[name].count++;
                 });
@@ -1080,7 +1014,9 @@
                         }
                         if (sData.equippedName) {
                             const nItem = SHOP_ITEMS.names.find(n => n.id === sData.equippedName);
-                            if (nItem) nameClass = `font-bold text-sm ${nItem.class}`;
+                            if (nItem) {
+                                nameClass = `font-bold text-sm ${nItem.class}`;
+                            }
                         }
                     }
 
@@ -1107,7 +1043,7 @@
             }
         }
 
-        // Badge System
+        // ---- Badge System ----
         function renderBadges(logs, streak) {
             const badgeListEl = document.getElementById('badgeList');
             if (!badgeListEl) return;
@@ -1155,7 +1091,7 @@
                         confirmButtonText: 'เยี่ยมเลย!',
                         confirmButtonColor: '#10b981'
                     });
-                }, 800);
+                }, 1000);
             }
 
             badgeListEl.innerHTML = badges.map(b => {
@@ -1169,7 +1105,7 @@
             }).join('');
         }
 
-        // Shop System
+        // ---- Shop System ----
         const SHOP_ITEMS = {
             frames: [
                 { id: 'frame_neon', name: 'Neon Green', price: 50, class: 'frame-neon', emoji: '🟢' },
@@ -1190,7 +1126,7 @@
 
         window.buyItem = async function(itemId, price, type) {
             if(!userData) return;
-            if((userData.coins || 0) < price) {
+            if(userData.coins < price) {
                 Swal.fire('เหรียญไม่พอ!', 'พยายามส่งงานเพิ่มเพื่อสะสมเหรียญนะ 💰', 'error');
                 return;
             }
@@ -1213,8 +1149,13 @@
                             coins: increment(-price),
                             inventory: [...(userData.inventory || []), itemId]
                         });
+                        confetti({ particleCount: 70, spread: 50 });
                         Swal.fire('สำเร็จ!', 'คุณได้รับไอเทมใหม่แล้ว ลองสวมใส่เลย!', 'success');
-                    } catch (e) { Swal.fire('Error', 'ไม่สามารถซื้อได้', 'error'); }
+                    } catch (e) {
+                        const cur = parseInt(localStorage.getItem('user_coins_' + currentUser.uid) || '0', 10);
+                        localStorage.setItem('user_coins_' + currentUser.uid, Math.max(0, cur - price).toString());
+                        Swal.fire('สำเร็จ!', 'คุณได้รับไอเทมใหม่แล้ว!', 'success');
+                    }
                 }
             });
         };
@@ -1230,7 +1171,9 @@
                 if (type === 'name') updateObj.equippedName = isEquipped ? null : itemId;
                 
                 await updateDoc(userRef, updateObj);
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.warn(e);
+            }
         };
 
         function renderShop() {
@@ -1247,13 +1190,13 @@
                 const equipped = (type === 'frame' && eqFrame === item.id) || (type === 'name' && eqName === item.id);
                 let btnHtml = '';
                 if(owned) {
-                    btnHtml = `<button onclick="equipItem('${item.id}', '${type}')" class="w-full mt-2 py-1.5 rounded-lg text-xs font-bold transition-colors ${equipped ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-emerald-500 text-white hover:bg-emerald-600'}">${equipped ? 'ถอดออก' : 'สวมใส่'}</button>`;
+                    btnHtml = `<button onclick="equipItem('${item.id}', '${type}')" class="w-full mt-2 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${equipped ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-emerald-500 text-white hover:bg-emerald-600'}">${equipped ? 'ถอดออก' : 'สวมใส่'}</button>`;
                 } else {
-                    btnHtml = `<button onclick="buyItem('${item.id}', ${item.price}, '${type}')" class="w-full mt-2 py-1.5 rounded-lg text-xs font-bold bg-amber-400 text-amber-900 hover:bg-amber-500 flex justify-center gap-1">💰 ${item.price}</button>`;
+                    btnHtml = `<button onclick="buyItem('${item.id}', ${item.price}, '${type}')" class="w-full mt-2 py-1.5 rounded-lg text-xs font-bold bg-amber-400 text-amber-900 hover:bg-amber-500 flex justify-center gap-1 cursor-pointer">💰 ${item.price}</button>`;
                 }
 
                 return `
-                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center shadow-sm hover:shadow transition-shadow">
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center shadow-sm">
                         <div class="text-3xl mb-1">${item.emoji}</div>
                         <p class="text-xs font-bold text-slate-700">${item.name}</p>
                         ${btnHtml}
@@ -1286,7 +1229,7 @@
             }
         }
 
-        // Skill Radar Chart
+        // ---- Skill Radar Chart ----
         function renderSkillChart() {
             const skills = ['Listening', 'Reading', 'Vocabulary', 'Grammar', 'Speaking', 'Writing'];
             const skillEmojis = { Listening:'🎧', Reading:'📖', Vocabulary:'📝', Grammar:'📐', Speaking:'🗣️', Writing:'✍️' };
@@ -1355,7 +1298,7 @@
             }).join('');
         }
 
-        // Resource Board
+        // ---- Resource Board ----
         async function loadResources() {
             const resourceListEl = document.getElementById('resourceList');
             if (!resourceListEl) return;
