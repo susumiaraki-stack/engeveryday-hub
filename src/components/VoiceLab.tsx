@@ -51,9 +51,13 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
   const [submitted, setSubmitted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
+  const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
+  const [politeFeedback, setPoliteFeedback] = useState<string>('');
+
   const timerRef = useRef<number | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const speechEvaluatorRef = useRef<SpeechEvaluator | null>(null);
+  const transcriptRef = useRef<string>('');
 
   useEffect(() => {
     audioRecorderRef.current = new AudioRecorder();
@@ -75,7 +79,11 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
   const startRecordingSession = async () => {
     setPermissionError(null);
     setLiveTranscript('');
+    transcriptRef.current = '';
+    setMatchedKeywords([]);
+    setPoliteFeedback('');
     setAccuracyScore(null);
+    setPolitenessScore(null);
     setAudioUrl(null);
     setRecordedBlob(null);
 
@@ -91,6 +99,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
 
     speechEvaluatorRef.current?.start(
       (transcript) => {
+        transcriptRef.current = transcript;
         setLiveTranscript(transcript);
       },
       (err) => {
@@ -120,31 +129,58 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       setRecordedBlob(blob);
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
-      setHasRecorded(true);
-
-      const spokenLower = liveTranscript.toLowerCase();
-
-      // 1. Calculate Fluency (Target keywords matched + pace)
-      let matchedCount = 0;
-      challenge.targetKeywords.forEach((kw) => {
-        if (spokenLower.includes(kw.toLowerCase())) matchedCount++;
-      });
-      const fluency = Math.max(
-        3,
-        Math.min(5, Math.round((matchedCount / challenge.targetKeywords.length) * 5) || 4)
-      );
-      setAccuracyScore(fluency);
-
-      // 2. Calculate Politeness (Pragmatic markers: please, could, would, may, excuse, thank)
-      const politeMarkers = ['please', 'could', 'would', 'may', 'excuse', 'thank', 'pardon', 'kindly'];
-      const hasPoliteWord = politeMarkers.some((marker) => spokenLower.includes(marker));
-      const politeness = hasPoliteWord ? 5 : 3;
-      setPolitenessScore(politeness);
-    } else {
-      setHasRecorded(true);
-      setAccuracyScore(4);
-      setPolitenessScore(4);
     }
+    setHasRecorded(true);
+
+    const spokenLower = transcriptRef.current.trim().toLowerCase();
+
+    // 1. Calculate Fluency (Keyword match & vocabulary accuracy)
+    const matched: string[] = [];
+    challenge.targetKeywords.forEach((kw) => {
+      if (spokenLower.includes(kw.toLowerCase())) {
+        matched.push(kw);
+      }
+    });
+    setMatchedKeywords(matched);
+
+    let calculatedFluency = 1;
+    if (spokenLower.length === 0) {
+      calculatedFluency = 1;
+    } else if (matched.length === challenge.targetKeywords.length) {
+      calculatedFluency = 5; // All keywords said!
+    } else if (matched.length >= 2) {
+      calculatedFluency = 4;
+    } else if (matched.length === 1) {
+      calculatedFluency = 3;
+    } else if (spokenLower.split(' ').length >= 3) {
+      calculatedFluency = 2; // Spoke words, but missed target keywords
+    } else {
+      calculatedFluency = 1;
+    }
+    setAccuracyScore(calculatedFluency);
+
+    // 2. Calculate Politeness (Pragmatic markers: polite vs neutral vs blunt)
+    const politeMarkers = ['please', 'could', 'would', 'may', 'excuse', 'thank', 'pardon', 'kindly'];
+    const impoliteMarkers = ['give me', 'bring me', 'i want'];
+
+    const hasPolite = politeMarkers.some((marker) => spokenLower.includes(marker));
+    const hasImpolite = impoliteMarkers.some((marker) => spokenLower.includes(marker));
+
+    let calculatedPoliteness = 3;
+    if (spokenLower.length === 0) {
+      calculatedPoliteness = 1;
+      setPoliteFeedback('ไม่ได้ยินเสียงพูด ชัดเจน');
+    } else if (hasPolite) {
+      calculatedPoliteness = 5;
+      setPoliteFeedback('สุภาพมาก (ตรวจพบคำสุภาพ เช่น please, could you)');
+    } else if (hasImpolite) {
+      calculatedPoliteness = 2;
+      setPoliteFeedback('ห้วนเกินไป (แนะนำให้เลี่ยง give me หรือ I want)');
+    } else {
+      calculatedPoliteness = 3;
+      setPoliteFeedback('ระดับทั่วไป (แนะนำให้เติม please หรือ could you เพื่อได้ 5 ดาว)');
+    }
+    setPolitenessScore(calculatedPoliteness);
   };
 
   const handleToggleRecording = () => {
@@ -180,8 +216,8 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       task: scenario.title,
       submittedAt: 'Just now',
       duration: `0:${recordedSeconds < 10 ? '0' : ''}${recordedSeconds}s`,
-      fluencyScore: accuracyScore || 5,
-      appropriatenessScore: politenessScore || 5,
+      fluencyScore: accuracyScore !== null ? accuracyScore : 1,
+      appropriatenessScore: politenessScore !== null ? politenessScore : 3,
       audioBlobUrl: audioUrl || undefined,
       transcription: liveTranscript || challenge.modelPhrase,
       feedback: 'Submitted for teacher evaluation.',
@@ -353,19 +389,56 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
             </div>
           )}
 
-          {/* Fluency & Politeness Score Badges */}
+          {/* Fluency & Politeness Score Badges & Diagnostic Feedback */}
           {(accuracyScore !== null || politenessScore !== null) && (
-            <div className="w-full space-y-1.5 mb-4">
+            <div className="w-full space-y-2 mb-4 text-left">
               <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs">
-                <span className="font-bold text-amber-900">Fluency (ความคล่องแคล่ว):</span>
-                <span className="font-black text-amber-700 bg-white px-2 py-0.5 rounded-md shadow-2xs">
-                  ⭐ {accuracyScore || 4} / 5.0
+                <div>
+                  <span className="font-bold text-amber-900 block">Fluency (ความคล่องแคล่ว):</span>
+                  <span className="text-[10px] text-amber-700">วัดจากการตรวจจับคำศัพท์เป้าหมาย</span>
+                </div>
+                <span className="font-black text-amber-700 bg-white px-2.5 py-1 rounded-lg shadow-2xs text-sm">
+                  ⭐ {accuracyScore ?? 1} / 5
                 </span>
               </div>
+
+              {/* Keyword Breakdown Pill Tags */}
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">
+                  คำศัพท์เป้าหมายในภารกิจ (Target Keywords):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {challenge.targetKeywords.map((kw) => {
+                    const isMatched = matchedKeywords.some(
+                      (m) => m.toLowerCase() === kw.toLowerCase()
+                    );
+                    return (
+                      <span
+                        key={kw}
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                          isMatched
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-slate-200/70 text-slate-500 line-through'
+                        }`}
+                      >
+                        {isMatched ? '✅' : '❌'} {kw}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
-                <span className="font-bold text-emerald-900">Politeness (ความสุภาพ):</span>
-                <span className="font-black text-emerald-700 bg-white px-2 py-0.5 rounded-md shadow-2xs">
-                  ⭐ {politenessScore || 5} / 5.0
+                <div>
+                  <span className="font-bold text-emerald-900 block">Politeness (ความสุภาพ):</span>
+                  {politeFeedback && (
+                    <span className="text-[10px] text-emerald-700 block mt-0.5">
+                      {politeFeedback}
+                    </span>
+                  )}
+                </div>
+                <span className="font-black text-emerald-700 bg-white px-2.5 py-1 rounded-lg shadow-2xs text-sm shrink-0 ml-2">
+                  ⭐ {politenessScore ?? 3} / 5
                 </span>
               </div>
             </div>

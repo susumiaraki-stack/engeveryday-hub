@@ -55,7 +55,7 @@ export class SpeechEvaluator {
       const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
       if (SpeechRecognition) {
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
+        this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.lang = 'en-US';
         this.isSupported = true;
@@ -75,15 +75,15 @@ export class SpeechEvaluator {
 
     try {
       this.recognition.onresult = (event: any) => {
-        let transcript = '';
+        let fullTranscript = '';
         let isFinal = false;
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
+        for (let i = 0; i < event.results.length; ++i) {
+          fullTranscript += event.results[i][0].transcript + ' ';
           if (event.results[i].isFinal) {
             isFinal = true;
           }
         }
-        onResult(transcript.trim(), isFinal);
+        onResult(fullTranscript.trim(), isFinal);
       };
 
       this.recognition.onerror = (event: any) => {
