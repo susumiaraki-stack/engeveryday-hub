@@ -45,6 +45,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [accuracyScore, setAccuracyScore] = useState<number | null>(null);
+  const [politenessScore, setPolitenessScore] = useState<number | null>(null);
   const [isListeningModel, setIsListeningModel] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -122,19 +123,27 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       setHasRecorded(true);
 
       const spokenLower = liveTranscript.toLowerCase();
+
+      // 1. Calculate Fluency (Target keywords matched + pace)
       let matchedCount = 0;
       challenge.targetKeywords.forEach((kw) => {
         if (spokenLower.includes(kw.toLowerCase())) matchedCount++;
       });
-
-      const score = Math.max(
+      const fluency = Math.max(
         3,
         Math.min(5, Math.round((matchedCount / challenge.targetKeywords.length) * 5) || 4)
       );
-      setAccuracyScore(score);
+      setAccuracyScore(fluency);
+
+      // 2. Calculate Politeness (Pragmatic markers: please, could, would, may, excuse, thank)
+      const politeMarkers = ['please', 'could', 'would', 'may', 'excuse', 'thank', 'pardon', 'kindly'];
+      const hasPoliteWord = politeMarkers.some((marker) => spokenLower.includes(marker));
+      const politeness = hasPoliteWord ? 5 : 3;
+      setPolitenessScore(politeness);
     } else {
       setHasRecorded(true);
       setAccuracyScore(4);
+      setPolitenessScore(4);
     }
   };
 
@@ -172,7 +181,7 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
       submittedAt: 'Just now',
       duration: `0:${recordedSeconds < 10 ? '0' : ''}${recordedSeconds}s`,
       fluencyScore: accuracyScore || 5,
-      appropriatenessScore: 5,
+      appropriatenessScore: politenessScore || 5,
       audioBlobUrl: audioUrl || undefined,
       transcription: liveTranscript || challenge.modelPhrase,
       feedback: 'Submitted for teacher evaluation.',
@@ -344,13 +353,21 @@ export const VoiceLab: React.FC<VoiceLabProps> = ({
             </div>
           )}
 
-          {/* Accuracy Score Badge */}
-          {accuracyScore !== null && (
-            <div className="w-full p-2.5 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-orange-800">Speaking Score:</span>
-              <span className="text-xs font-black text-orange-600 bg-white px-2.5 py-0.5 rounded-md shadow-2xs">
-                ⭐ {accuracyScore} / 5.0
-              </span>
+          {/* Fluency & Politeness Score Badges */}
+          {(accuracyScore !== null || politenessScore !== null) && (
+            <div className="w-full space-y-1.5 mb-4">
+              <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs">
+                <span className="font-bold text-amber-900">Fluency (ความคล่องแคล่ว):</span>
+                <span className="font-black text-amber-700 bg-white px-2 py-0.5 rounded-md shadow-2xs">
+                  ⭐ {accuracyScore || 4} / 5.0
+                </span>
+              </div>
+              <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
+                <span className="font-bold text-emerald-900">Politeness (ความสุภาพ):</span>
+                <span className="font-black text-emerald-700 bg-white px-2 py-0.5 rounded-md shadow-2xs">
+                  ⭐ {politenessScore || 5} / 5.0
+                </span>
+              </div>
             </div>
           )}
 

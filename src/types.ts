@@ -63,9 +63,11 @@ export interface ChatMessage {
 
 export interface UserProfile {
   name: string;
+  studentNumber: string;
   grade: string;
   avatar: string;
   xp: number;
   streak: number;
   completedQuests: string[];
+  isLoggedIn: boolean;
 }

@@ -363,60 +363,121 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                       </div>
                     )}
 
-                    {/* Rubric Score & Feedback Button */}
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                      <div className="space-y-1 text-[10px]">
-                        <div className="flex items-center gap-1.5 text-slate-600">
-                          <span className="font-semibold w-16">Fluency:</span>
-                          <div className="flex text-amber-400">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < sub.fluencyScore
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'text-slate-200'
-                                }`}
-                              />
+                    {/* Feedback if already given */}
+                    {sub.feedback && (
+                      <div className="p-2.5 bg-emerald-50/70 border border-emerald-200/60 rounded-xl text-[11px] text-emerald-900 font-medium">
+                        <span className="font-bold block text-[10px] text-emerald-700 uppercase">
+                          Teacher's Feedback:
+                        </span>
+                        {sub.feedback}
+                      </div>
+                    )}
+
+                    {/* Interactive Rubric Scoring & Feedback Controls */}
+                    <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                      <div className="grid grid-cols-2 gap-2 text-[10px]">
+                        {/* Interactive Fluency Rating */}
+                        <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-100">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-slate-700">Fluency (ความคล่องแคล่ว):</span>
+                            <span className="font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm">
+                              {sub.fluencyScore}/5
+                            </span>
+                          </div>
+                          <div className="flex gap-1 text-amber-400">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={async () => {
+                                  sub.fluencyScore = star;
+                                  await updateSubmissionFeedbackInDB(sub.id, sub.feedback || '', star, sub.appropriatenessScore);
+                                  handleRefresh();
+                                }}
+                                className="cursor-pointer hover:scale-125 transition-transform"
+                                title={`ให้คะแนนความคล่องแคล่ว ${star}/5`}
+                              >
+                                <Star
+                                  className={`w-3.5 h-3.5 ${
+                                    star <= sub.fluencyScore
+                                      ? 'fill-amber-400 text-amber-400'
+                                      : 'text-slate-200 hover:text-amber-200'
+                                  }`}
+                                />
+                              </button>
                             ))}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-slate-600">
-                          <span className="font-semibold w-16">Politeness:</span>
-                          <div className="flex text-emerald-500">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < sub.appropriatenessScore
-                                    ? 'fill-emerald-500 text-emerald-500'
-                                    : 'text-slate-200'
-                                }`}
-                              />
+                        {/* Interactive Politeness Rating */}
+                        <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-100">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-slate-700">Politeness (ความสุภาพ):</span>
+                            <span className="font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
+                              {sub.appropriatenessScore}/5
+                            </span>
+                          </div>
+                          <div className="flex gap-1 text-emerald-500">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={async () => {
+                                  sub.appropriatenessScore = star;
+                                  await updateSubmissionFeedbackInDB(sub.id, sub.feedback || '', sub.fluencyScore, star);
+                                  handleRefresh();
+                                }}
+                                className="cursor-pointer hover:scale-125 transition-transform"
+                                title={`ให้คะแนนความสุภาพ ${star}/5`}
+                              >
+                                <Star
+                                  className={`w-3.5 h-3.5 ${
+                                    star <= sub.appropriatenessScore
+                                      ? 'fill-emerald-500 text-emerald-500'
+                                      : 'text-slate-200 hover:text-emerald-200'
+                                  }`}
+                                />
+                              </button>
                             ))}
                           </div>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleGiveFeedback(sub.id)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
-                          hasGivenFeedback
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100'
-                        }`}
-                      >
-                        {hasGivenFeedback ? (
-                          <>
-                            <Check className="w-3 h-3" /> Sent!
-                          </>
-                        ) : (
-                          <>
-                            <MessageSquareCheck className="w-3 h-3" /> Send Feedback
-                          </>
-                        )}
-                      </button>
+                      {/* Custom Teacher Feedback Form */}
+                      <div className="flex gap-1.5 pt-1">
+                        <input
+                          type="text"
+                          defaultValue={sub.feedback || ''}
+                          placeholder="พิมพ์ข้อเสนอแนะหรือคำชมให้นักเรียน..."
+                          id={`feedback-input-${sub.id}`}
+                          className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-orange-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const inputEl = document.getElementById(`feedback-input-${sub.id}`) as HTMLInputElement;
+                            const text = inputEl ? inputEl.value : 'Good job!';
+                            sub.feedback = text;
+                            await updateSubmissionFeedbackInDB(sub.id, text, sub.fluencyScore, sub.appropriatenessScore);
+                            handleGiveFeedback(sub.id);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 shadow-2xs ${
+                            hasGivenFeedback
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100'
+                          }`}
+                        >
+                          {hasGivenFeedback ? (
+                            <>
+                              <Check className="w-3 h-3" /> Saved!
+                            </>
+                          ) : (
+                            <>
+                              <MessageSquareCheck className="w-3 h-3" /> Save Feedback
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

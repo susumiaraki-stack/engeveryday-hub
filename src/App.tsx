@@ -10,6 +10,7 @@ import {
   fetchSubmissionsFromDB,
   uploadAndSaveSubmission,
 } from './lib/supabase';
+import { LoginModal } from './components/LoginModal';
 import {
   Sparkles,
   Home,
@@ -19,15 +20,19 @@ import {
   KeyRound,
   AlertCircle,
   X,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 
-const DEFAULT_PROFILE: UserProfile = {
-  name: 'Student',
-  grade: 'ม.2/2',
-  avatar: '👩‍🎓',
+const GUEST_PROFILE: UserProfile = {
+  name: 'Guest User',
+  studentNumber: '-',
+  grade: 'โหมดทดลอง',
+  avatar: '👤',
   xp: 0,
   streak: 1,
   completedQuests: [],
+  isLoggedIn: false,
 };
 
 // Clean any old legacy mockup data from browser localStorage immediately
@@ -49,19 +54,22 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
   const [activeScenario, setActiveScenario] = useState<Scenario>(SCENARIOS[0]);
 
+  // Login Modal State
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
   // Teacher Security Gate (PIN Protected)
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Load real profile from localStorage
+  // Load profile from localStorage (defaults to Guest)
   const [profile, setProfile] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem('eng_profile');
-      return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+      return saved ? JSON.parse(saved) : GUEST_PROFILE;
     } catch {
-      return DEFAULT_PROFILE;
+      return GUEST_PROFILE;
     }
   });
 
@@ -241,6 +249,30 @@ export default function App() {
               <span className="hidden sm:inline">Chat</span>
             </button>
 
+            {/* Student Login / Logout Action */}
+            {profile.isLoggedIn ? (
+              <button
+                onClick={() => {
+                  if (window.confirm('ต้องการออกจากระบบและกลับสู่โหมด Guest หรือไม่?')) {
+                    setProfile(GUEST_PROFILE);
+                  }
+                }}
+                className="px-2.5 py-1.5 rounded-xl font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer flex items-center gap-1"
+                title="ออกจากระบบ"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="px-2.5 py-1.5 rounded-xl font-bold bg-orange-50 text-orange-600 hover:bg-orange-100 transition-all cursor-pointer flex items-center gap-1"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Login</span>
+              </button>
+            )}
+
             {/* Teacher Gate Button (Locked with PIN) */}
             <button
               onClick={handleTeacherAccessRequest}
@@ -266,6 +298,7 @@ export default function App() {
             onSelectScenario={(sc) => setActiveScenario(sc)}
             profile={profile}
             onUpdateProfile={handleUpdateProfile}
+            onOpenLogin={() => setShowLoginModal(true)}
           />
         )}
 
@@ -364,6 +397,21 @@ export default function App() {
           </form>
         </div>
       )}
+
+      {/* Student Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={(newProfile) => {
+          setProfile(newProfile);
+          setShowLoginModal(false);
+        }}
+        onContinueAsGuest={() => {
+          setProfile(GUEST_PROFILE);
+          setShowLoginModal(false);
+        }}
+        currentProfile={profile}
+      />
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-500">

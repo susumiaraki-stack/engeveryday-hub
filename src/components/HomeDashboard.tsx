@@ -25,6 +25,7 @@ interface HomeDashboardProps {
   onSelectScenario: (scenario: Scenario) => void;
   profile: UserProfile;
   onUpdateProfile: (updated: Partial<UserProfile>) => void;
+  onOpenLogin: () => void;
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
@@ -32,6 +33,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onSelectScenario,
   profile,
   onUpdateProfile,
+  onOpenLogin,
 }) => {
   const [selectedLevel, setSelectedLevel] = useState<1 | 2>(1);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -67,34 +69,65 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       <div className="p-4 sm:p-5 bg-white border-b border-slate-200/60 sticky top-0 z-20 shadow-2xs">
         <div className="flex items-center justify-between mb-3">
           <div
-            onClick={() => setIsEditingProfile(true)}
+            onClick={() => onOpenLogin()}
             className="flex items-center gap-3 cursor-pointer group"
           >
             <div className="relative">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-orange-400 to-rose-400 flex items-center justify-center text-white text-xl font-bold shadow-sm group-hover:scale-105 transition-transform">
                 {profile.avatar}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
+              <div
+                className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white rounded-full ${
+                  profile.isLoggedIn ? 'bg-emerald-500' : 'bg-amber-400'
+                }`}
+              ></div>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <p className="text-xs text-slate-400 font-medium">Student Profile</p>
+                <p className="text-xs text-slate-400 font-medium">
+                  {profile.isLoggedIn ? 'Student Profile' : 'Guest Mode'}
+                </p>
                 <Edit2 className="w-3 h-3 text-slate-300 group-hover:text-orange-500 transition-colors" />
               </div>
               <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 {profile.name}
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                   {profile.grade}
+                  {profile.isLoggedIn && profile.studentNumber && ` • No.${profile.studentNumber}`}
                 </span>
               </h2>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200/60 rounded-full shadow-2xs">
-            <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
-            <span className="text-xs font-bold text-orange-700">{profile.streak}-Day Streak</span>
+          <div className="flex items-center gap-2">
+            {!profile.isLoggedIn ? (
+              <button
+                onClick={onOpenLogin}
+                className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-full text-xs font-bold shadow-xs hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+              >
+                เข้าสู่ระบบ
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200/60 rounded-full shadow-2xs">
+                <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
+                <span className="text-xs font-bold text-orange-700">{profile.streak}-Day Streak</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Guest Banner if not logged in */}
+        {!profile.isLoggedIn && (
+          <div className="mb-2 p-2 bg-amber-50/80 border border-amber-200/70 rounded-xl flex items-center justify-between text-[11px] text-amber-900">
+            <span>👋 คุณกำลังใช้งานในฐานะ Guest (ไม่ระบุตัวตน)</span>
+            <button
+              onClick={onOpenLogin}
+              className="text-xs font-bold text-orange-600 underline cursor-pointer"
+            >
+              ลงชื่อนักเรียน →
+            </button>
+          </div>
+        )}
 
         {/* Level & XP Progress */}
         <div className="space-y-1.5">
